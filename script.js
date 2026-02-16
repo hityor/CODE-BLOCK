@@ -84,7 +84,7 @@ function rebuild() {
             } else {
                 const n = Number(blockObj.value)
 
-                if (Number.isNan(n)) {
+                if (Number.isNaN(n)) {
                     blockObj.errors.push(`Значение должно быть числом`)
                 } else if (!Number.isInteger(n)) {
                     blockObj.errors.push(`Число должно быть целым`)
@@ -133,6 +133,7 @@ addAssignBtn.addEventListener("click", function () {
     updateSelectionOptions(select)
 
     const span = document.createElement("span")
+    span.textContent = " = "
 
     const input = document.createElement("input")
 
@@ -141,7 +142,7 @@ addAssignBtn.addEventListener("click", function () {
 
     const blockObj = {
         type: "Assign",
-        variable: "",
+        variable: select.value,
         value: "",
         errors: [],
         ui: { block, errorBox, select, input }
