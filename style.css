@@ -82,3 +82,88 @@ button {
     padding: 5px;
     margin: 10px 10px;
 }
+
+body {
+    font-family: Arial;
+}
+
+.blockError {
+    border: 1px solid red;
+    padding: 10px;
+    margin: 10px 10px;
+}
+
+.blockSuccess {
+    border: 1px solid black;
+    padding: 10px;
+    margin: 10px 10px;
+}
+
+.errorBox {
+    padding: 5px;
+    margin: 10px 10px;
+}
+
+.toolbox-item:active {
+    cursor: grabbing;
+    opacity: 0.8;
+}
+
+#program {
+    min-height: 200px;
+    border: 2px dashed #4CAF50;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 10px;
+    background: #f9f9f9;
+}
+
+#program::before {
+    content: "Перетащите блоки сюда";
+    display: block;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    pointer-events: none;
+}
+
+#program:not(:empty)::before {
+    content: none;
+}
+
+/* Добавьте в конец файла style.css */
+
+.toolbox-item[draggable="true"]:hover {
+    background: #e0e0e0;
+    cursor: grab;
+}
+
+#program {
+    min-height: 200px;
+    border: 2px dashed #4CAF50;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 10px;
+    background: #f9f9f9;
+    transition: background-color 0.2s;
+}
+
+#program.drag-over {
+    background: #e8f5e9;
+    border-color: #2E7D32;
+}
+
+#program::before {
+    content: "Перетащите блоки сюда";
+    display: block;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    pointer-events: none;
+}
+
+#program:not(:empty)::before {
+    content: none;
+}
