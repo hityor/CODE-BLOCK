@@ -11,17 +11,18 @@
 
     <h1>CodeBlock Interpeter</h1>
 
-    <button id="addVarBtn">Add Variable</button>
-
-    <button id="addAssignBtn">Add Assign</button>
-
-    <button id="runBtn">RUN</button>
+    <div id="toolbox">
+        <div class="blockTool" id="varDecl" draggable="true" >Variable Declaration</div>
+        <div class="blockTool" id="assign" draggable="true" >Assignment</div>
+        <button id="runBtn">RUN</button>
+    </div>
 
     <div id="program"></div>
 
     <div id="memoryView"></div>
-
+    
     <script src="script.js"></script>
+    <script src="dragndrop.js"></script>
 </body>
 
 </html>

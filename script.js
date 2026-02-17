@@ -1,19 +1,18 @@
 // ==== DOM REFS ====
 const programDiv = document.getElementById("program")
-const addVarBtn = document.getElementById("addVarBtn")
 const runBtn = document.getElementById("runBtn")
-const addAssignBtn = document.getElementById("addAssignBtn")
 const memoryView = document.getElementById("memoryView")
 
 // ==== STATE ====
 const program = []
 let memory = {}
+let nextId = 1
 
 // ==== UI ====
-// Кнопка добавления переменной
-addVarBtn.addEventListener("click", function () {
+function createVarBlock() {
     const block = document.createElement("div")
     block.className = "blockSuccess"
+    block.draggable = true
 
     const input = document.createElement("input")
     input.type = "text"
@@ -26,10 +25,11 @@ addVarBtn.addEventListener("click", function () {
     errorBox.className = "errorBox"
 
     const blockObj = {
+        id: nextId++,
         type: "varDecl",
         raw: "",
         errors: [],
-        ui: { block, errorBox }
+        ui: { block, errorBox, input }
     }
 
     program.push(blockObj)
@@ -43,16 +43,19 @@ addVarBtn.addEventListener("click", function () {
     block.appendChild(input)
     block.appendChild(errorBox)
     programDiv.appendChild(block)
-})
 
-// Кнопка RUN
-runBtn.addEventListener("click", function () {
-    run()
-})
+    block.addEventListener("dragstart", function (e) {
+        e.dataTransfer.setData("text/plain", `move:${blockObj.id}`)
+        e.dataTransfer.effectAllowed = "move"
+    })
 
-// Кнопка Add Assign
-addAssignBtn.addEventListener("click", function () {
+    return block
+}
+
+function createAssignBlock() {
     const block = document.createElement("div")
+    block.className = "blockSuccess"
+    block.draggable = true
 
     const select = document.createElement("select")
     updateSelectionOptions(select)
@@ -66,6 +69,7 @@ addAssignBtn.addEventListener("click", function () {
     errorBox.className = "errorBox"
 
     const blockObj = {
+        id: nextId++,
         type: "assign",
         variable: select.value,
         value: "",
@@ -76,7 +80,6 @@ addAssignBtn.addEventListener("click", function () {
 
     select.addEventListener("change", function () {
         blockObj.variable = select.value
-        span.textContent = ` = `
     })
 
     input.addEventListener("input", function () {
@@ -88,9 +91,22 @@ addAssignBtn.addEventListener("click", function () {
     block.appendChild(input)
     block.appendChild(errorBox)
     programDiv.appendChild(block)
+
+    block.addEventListener("dragstart", function (e) {
+        e.dataTransfer.setData("text/plain", `move:${blockObj.id}`)
+        e.dataTransfer.effectAllowed = "move"
+    })
+
+    return block
+}
+
+// Кнопка RUN
+runBtn.addEventListener("click", function () {
+    run()
 })
 
 function updateSelectionOptions(select) {
+    const previousValue = select.value
     select.innerHTML = ""
 
     for (const name in memory) {
@@ -100,12 +116,23 @@ function updateSelectionOptions(select) {
 
         select.appendChild(option)
     }
+    let newValue = previousValue
+    if (previousValue && memory.hasOwnProperty(previousValue)) {
+        select.value = previousValue
+    } else if (select.options.length > 0) {
+        newValue = select.options[0].value
+        select.value = newValue
+    } else {
+        newValue = ""
+    }
+    return newValue
 }
 
 function updateAllAssignSelections() {
     for (const blockObj of program) {
         if (blockObj.type == "assign") {
-            updateSelectionOptions(blockObj.ui.select)
+            const newVal = updateSelectionOptions(blockObj.ui.select)
+            blockObj.variable = newVal
         }
     }
 }
@@ -120,11 +147,11 @@ function rebuild() {
             const names = parseNames(blockObj.raw)
             if (names.length > 0) {
                 for (const name of names) {
-                    if (!isValidVarName(name)) {
+                    if (!isValidVarName(name))
                         blockObj.errors.push(`Некорректное название переменной: ${name}`)
-                    } else if (declared.has(name)) {
+                    else if (declared.has(name))
                         blockObj.errors.push(`Дубликат: ${name}`)
-                    } else {
+                    else {
                         declared.add(name)
                         memory[name] = 0
                     }
@@ -138,13 +165,12 @@ function rebuild() {
             } else {
                 const n = Number(blockObj.value)
 
-                if (Number.isNaN(n)) {
+                if (Number.isNaN(n))
                     blockObj.errors.push(`Значение должно быть числом`)
-                } else if (!Number.isInteger(n)) {
+                else if (!Number.isInteger(n))
                     blockObj.errors.push(`Число должно быть целым`)
-                } else {
+                else
                     memory[blockObj.variable] = n
-                }
             }
         }
     }
