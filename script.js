@@ -1,7 +1,7 @@
 // ==== DOM REFS ====
-const programDiv = document.getElementById("program")
+const programDiv = document.getElementById("canvas")
 const runBtn = document.getElementById("runBtn")
-const memoryView = document.getElementById("memoryView")
+const memoryView = document.getElementById("logContent")
 
 // ==== STATE ====
 const program = []

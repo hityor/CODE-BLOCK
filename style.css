@@ -83,27 +83,6 @@ button {
     margin: 10px 10px;
 }
 
-body {
-    font-family: Arial;
-}
-
-.blockError {
-    border: 1px solid red;
-    padding: 10px;
-    margin: 10px 10px;
-}
-
-.blockSuccess {
-    border: 1px solid black;
-    padding: 10px;
-    margin: 10px 10px;
-}
-
-.errorBox {
-    padding: 5px;
-    margin: 10px 10px;
-}
-
 .toolbox-item:active {
     cursor: grabbing;
     opacity: 0.8;
