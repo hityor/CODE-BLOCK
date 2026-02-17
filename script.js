@@ -1,9 +1,9 @@
 // ==== DOM REFS ====
-const programDiv = document.getElementById("program")
+const programDiv = document.getElementById("canvas")
 const addVarBtn = document.getElementById("addVarBtn")
 const runBtn = document.getElementById("runBtn")
 const addAssignBtn = document.getElementById("addAssignBtn")
-const memoryView = document.getElementById("memoryView")
+const memoryView = document.getElementById("logContent")
 
 // ==== STATE ====
 const program = []

@@ -8,18 +8,29 @@
 </head>
 
 <body>
+    <div class="app">
+        <aside class="leftPanel">
+            <button id="addVarBtn">Add Variable</button>
+            <button id="addAssignBtn">Assign</button>
+        </aside>
 
-    <h1>CodeBlock Interpeter</h1>
+        <main class="mainArea">
+            <header class="topBar">
+                <button id="runBtn">RUN</button>
+            </header>
 
-    <button id="addVarBtn">Add Variable</button>
+            <section class="workspace">
+                <div class="canvas" id="canvas"></div>
+            </section>
+        </main>
 
-    <button id="addAssignBtn">Add Assign</button>
 
-    <button id="runBtn">RUN</button>
 
-    <div id="program"></div>
-
-    <div id="memoryView"></div>
+        <aside class="rightPanel">
+            <h3>Logs</h3>
+            <div id="logContent"></div>
+        </aside>
+    </div>
 
     <script src="script.js"></script>
 </body>

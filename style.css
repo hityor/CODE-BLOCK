@@ -1,5 +1,61 @@
 body {
+    margin: 0;
     font-family: Arial;
+}
+
+.app {
+    display: grid;
+    grid-template-columns: 200px 1fr 250px;
+    height: 100vh;
+}
+
+.leftPanel {
+    background: #2e4255;
+    padding: 20px;
+    /* idk */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mainArea {
+    /* idk */
+    display: flex;
+    flex-direction: column;
+}
+
+.topBar {
+    height: 60px;
+    background: #ffffff;
+    /* idk */
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+
+}
+
+.workspace {
+    flex-grow: 1;
+    padding: 20px;
+    /* idk */
+    overflow: auto;
+}
+
+.canvas {
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    /* idk dashed */
+    border: 2px dashed #bcc2c6;
+    position: relative;
+}
+
+.rightPanel {
+    background: #f1f1f2;
+    border-left: 1px solid #c6c6c6;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
 }
 
 .blockError {
