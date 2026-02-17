@@ -15,6 +15,7 @@ function createVarBlock() {
     block.draggable = true
 
     const input = document.createElement("input")
+    input.className = "input"
     input.type = "text"
     input.placeholder = "a, b, c"
 
@@ -64,6 +65,7 @@ function createAssignBlock() {
     span.textContent = " = "
 
     const input = document.createElement("input")
+    input.className = "input"
 
     const errorBox = document.createElement("div")
     errorBox.className = "errorBox"
