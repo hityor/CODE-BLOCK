@@ -76,15 +76,21 @@ button:active {
 }
 
 .blockError {
-    border: 1px solid red;
-    padding: 10px;
-    margin: 10px 10px;
+    border: 1px solid #fca5a5;
+    background: #fef2f2;
+    color: #991b1b;
+    padding: 10px 12px;
+    margin: 10px;
+    border-radius: 8px;
 }
 
 .blockSuccess {
-    border: 1px solid black;
-    padding: 10px;
-    margin: 10px 10px;
+    border: 1px solid #86efac;
+    background: #f0fdf4;
+    color: #14532d;
+    padding: 10px 12px;
+    margin: 10px;
+    border-radius: 8px;
 }
 
 .errorBox {
