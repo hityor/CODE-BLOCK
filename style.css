@@ -66,6 +66,23 @@ button {
     border-radius: 4px;
 }
 
+button:hover {
+    cursor: pointer;
+}
+
+button:active {
+    background: #46a2df;
+    cursor: pointer;
+}
+
+.blockTool {
+    padding: 10px 15px;
+    background: #3498db;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+}
+
 .blockError {
     border: 1px solid red;
     padding: 10px;
@@ -83,64 +100,35 @@ button {
     margin: 10px 10px;
 }
 
+.canvas {
+    min-height: 200px;
+    border: 2px dashed #4CAF50;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 10px;
+    background: #f9f9f9;
+}
+
+.canvas::before {
+    content: "Перетащите блоки сюда";
+    display: block;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    pointer-events: none;
+}
+
+.canvas:not(:empty)::before {
+    content: none;
+}
+
 .blockTool:active {
     cursor: grabbing;
     opacity: 0.8;
 }
 
-#canvas {
-    min-height: 200px;
-    border: 2px dashed #4CAF50;
-    border-radius: 8px;
-    padding: 10px;
-    margin: 10px;
-    background: #f9f9f9;
-}
-
-#canvas::before {
-    content: "Перетащите блоки сюда";
-    display: block;
-    color: #888;
-    font-style: italic;
-    text-align: center;
-    padding: 20px;
-    pointer-events: none;
-}
-
-#canvas:not(:empty)::before {
-    content: none;
-}
-
 .blockTool[draggable="true"]:hover {
-    background: #e0e0e0;
+    background: #46a2df;
     cursor: grab;
-}
-
-#canvas {
-    min-height: 200px;
-    border: 2px dashed #4CAF50;
-    border-radius: 8px;
-    padding: 10px;
-    margin: 10px;
-    background: #f9f9f9;
-    transition: background-color 0.2s;
-}
-
-#canvas.drag-over {
-    background: #e8f5e9;
-    border-color: #2E7D32;
-}
-
-#canvas::before {
-    content: "Перетащите блоки сюда";
-    display: block;
-    color: #888;
-    font-style: italic;
-    text-align: center;
-    padding: 20px;
-    pointer-events: none;
-}
-
-#canvas:not(:empty)::before {
-    content: none;
 }
