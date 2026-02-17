@@ -83,12 +83,12 @@ button {
     margin: 10px 10px;
 }
 
-.toolbox-item:active {
+.blockTool:active {
     cursor: grabbing;
     opacity: 0.8;
 }
 
-#program {
+#canvas {
     min-height: 200px;
     border: 2px dashed #4CAF50;
     border-radius: 8px;
@@ -97,7 +97,7 @@ button {
     background: #f9f9f9;
 }
 
-#program::before {
+#canvas::before {
     content: "Перетащите блоки сюда";
     display: block;
     color: #888;
@@ -107,18 +107,16 @@ button {
     pointer-events: none;
 }
 
-#program:not(:empty)::before {
+#canvas:not(:empty)::before {
     content: none;
 }
 
-/* Добавьте в конец файла style.css */
-
-.toolbox-item[draggable="true"]:hover {
+.blockTool[draggable="true"]:hover {
     background: #e0e0e0;
     cursor: grab;
 }
 
-#program {
+#canvas {
     min-height: 200px;
     border: 2px dashed #4CAF50;
     border-radius: 8px;
@@ -128,12 +126,12 @@ button {
     transition: background-color 0.2s;
 }
 
-#program.drag-over {
+#canvas.drag-over {
     background: #e8f5e9;
     border-color: #2E7D32;
 }
 
-#program::before {
+#canvas::before {
     content: "Перетащите блоки сюда";
     display: block;
     color: #888;
@@ -143,6 +141,6 @@ button {
     pointer-events: none;
 }
 
-#program:not(:empty)::before {
+#canvas:not(:empty)::before {
     content: none;
 }
