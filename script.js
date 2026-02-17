@@ -19,7 +19,7 @@ function createVarBlock() {
     input.placeholder = "a, b, c"
 
     const type = document.createElement("span")
-    type.textContent = "int"
+    type.textContent = "int "
 
     const errorBox = document.createElement("div")
     errorBox.className = "errorBox"
@@ -160,7 +160,7 @@ function rebuild() {
         } else if (blockObj.type == "assign") {
             blockObj.errors = []
 
-            if (!declared.has(blockObj.variable)) {
+            if (!declared.has(blockObj.variable) && blockObj.variable != "") {
                 blockObj.errors.push(`Такая переменная не объявлена: ${blockObj.variable}`)
             } else {
                 const n = Number(blockObj.value)
