@@ -12,14 +12,12 @@ body {
 .leftPanel {
     background: #2e4255;
     padding: 20px;
-    /* idk */
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
 .mainArea {
-    /* idk */
     display: flex;
     flex-direction: column;
 }
@@ -27,7 +25,6 @@ body {
 .topBar {
     height: 60px;
     background: #ffffff;
-    /* idk */
     display: flex;
     align-items: center;
     padding: 0 20px;
@@ -36,8 +33,7 @@ body {
 
 .workspace {
     flex-grow: 1;
-    padding: 20px;
-    /* idk */
+    padding: 10px;
     overflow: auto;
 }
 
@@ -45,7 +41,6 @@ body {
     width: 100%;
     height: 100%;
     background: #ffffff;
-    /* idk dashed */
     border: 2px dashed #bcc2c6;
     position: relative;
 }
@@ -56,6 +51,14 @@ body {
     padding: 15px;
     display: flex;
     flex-direction: column;
+}
+
+button {
+    padding: 10px 15px;
+    background: #3498db;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
 }
 
 .blockError {

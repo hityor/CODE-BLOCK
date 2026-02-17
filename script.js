@@ -53,6 +53,7 @@ runBtn.addEventListener("click", function () {
 // Кнопка Add Assign
 addAssignBtn.addEventListener("click", function () {
     const block = document.createElement("div")
+    block.className = "blockSuccess"
 
     const select = document.createElement("select")
     updateSelectionOptions(select)
