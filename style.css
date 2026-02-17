@@ -42,14 +42,6 @@ body {
     overflow-x: hidden;
 }
 
-.canvas {
-    width: 100%;
-    min-height: 0;
-    background: #ffffff;
-    border: 2px dashed #bcc2c6;
-    position: relative;
-}
-
 .rightPanel {
     background: #f1f1f2;
     border-left: 1px solid #c6c6c6;
