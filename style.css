@@ -1,12 +1,14 @@
 body {
     margin: 0;
     font-family: Arial;
+    overflow: hidden;
 }
 
 .app {
     display: grid;
     grid-template-columns: 200px 1fr 250px;
     height: 100vh;
+    overflow: hidden;
 }
 
 .leftPanel {
@@ -20,6 +22,7 @@ body {
 .mainArea {
     display: flex;
     flex-direction: column;
+    min-height: 0;
 }
 
 .topBar {
@@ -34,12 +37,14 @@ body {
 .workspace {
     flex-grow: 1;
     padding: 10px;
-    overflow: auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .canvas {
     width: 100%;
-    height: 100%;
+    min-height: 0;
     background: #ffffff;
     border: 2px dashed #bcc2c6;
     position: relative;
