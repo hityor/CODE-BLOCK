@@ -1,37 +1,36 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>CodeBlock</title>
-    <link rel="stylesheet" href="style.css">
-</head>
+    <link rel="stylesheet" href="style.css" />
+  </head>
 
-<body>
+  <body>
     <div class="app">
-        <aside class="leftPanel">
-            <div class="blockTool" id="varDecl" draggable="true">Add Variable</div>
-            <div class="blockTool" id="assign" draggable="true">Assign</div>
-        </aside>
+      <aside class="leftPanel">
+        <div class="blockTool" id="varDecl" draggable="true">Add Variable</div>
+        <div class="blockTool" id="assign" draggable="true">Assign</div>
+      </aside>
 
-        <main class="mainArea">
-            <header class="topBar">
-                <button id="runBtn">RUN</button>
-            </header>
+      <main class="mainArea">
+        <header class="topBar">
+          <button id="runBtn">RUN</button>
+        </header>
 
-            <section class="workspace">
-                <div class="canvas" id="canvas"></div>
-            </section>
-        </main>
+        <section class="workspace">
+          <div class="canvas" id="canvas"></div>
+        </section>
+      </main>
 
-        <aside class="rightPanel">
-            <h3>Logs</h3>
-            <div id="logContent"></div>
-        </aside>
+      <aside class="rightPanel">
+        <h3>Logs</h3>
+        <div id="logContent"></div>
+      </aside>
     </div>
 
+    <script src="dist/interpreter.js"></script>
     <script src="script.js"></script>
     <script src="dragndrop.js"></script>
-</body>
-
+  </body>
 </html>

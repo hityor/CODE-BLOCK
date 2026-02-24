@@ -1,82 +1,76 @@
-const blockTools = document.querySelectorAll('.blockTool')
+const blockTools = document.querySelectorAll(".blockTool");
 
 function getDropIndex(mouseY) {
-    const elements = Array.from(programDiv.children)
-    
-    for (let i = 0; i < elements.length; i++) {
-        const rect = elements[i].getBoundingClientRect()
-    
-        if (rect.top < mouseY && mouseY < rect.top + rect.height)
-            return i
-    }
-    return elements.length
+  const elements = Array.from(programDiv.children);
+
+  for (let i = 0; i < elements.length; i++) {
+    const rect = elements[i].getBoundingClientRect();
+
+    if (rect.top < mouseY && mouseY < rect.top + rect.height) return i;
+  }
+  return elements.length;
 }
 
-blockTools.forEach(item => {
-    item.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', 'add:' + item.id)
-    })
-})
+blockTools.forEach((item) => {
+  item.addEventListener("dragstart", (e) => {
+    e.dataTransfer.setData("text/plain", "add:" + item.id);
+  });
+});
 
-programDiv.addEventListener('dragover', (e) => {
-    e.preventDefault()
-    
-    const data = e.dataTransfer.getData('text/plain')
+programDiv.addEventListener("dragover", (e) => {
+  e.preventDefault();
 
-    if (data && data.startsWith('add:'))
-        e.dataTransfer.dropEffect = 'copy'
-    else if (data && data.startsWith('move:'))
-        e.dataTransfer.dropEffect = 'move'
-})
+  const data = e.dataTransfer.getData("text/plain");
 
-programDiv.addEventListener('drop', (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    const data = e.dataTransfer.getData('text/plain')
-    if (!data) return
+  if (data && data.startsWith("add:")) e.dataTransfer.dropEffect = "copy";
+  else if (data && data.startsWith("move:")) e.dataTransfer.dropEffect = "move";
+});
 
-    if (data.startsWith('add:')) {
-        // Создание нового блока
-        const blockType = data.split(':')[1]
-        if (blockType === 'varDecl') {
-            createVarBlock()
-        } else if (blockType === 'assign') {
-            createAssignBlock()
-        }
+programDiv.addEventListener("drop", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
 
-        run()
-    } else if (data.startsWith('move:')) {
-        // Перемещение существующего блока
-        const blockId = parseInt(data.split(':')[1], 10)
-        const oldIndex = program.findIndex(b => b.id === blockId)
-        if (oldIndex === -1) return
+  const data = e.dataTransfer.getData("text/plain");
+  if (!data) return;
 
-        const blockObj = program[oldIndex]
-        const element = blockObj.ui.block
-
-        let newIndex = getDropIndex(e.clientY)
-
-        if (newIndex >= oldIndex)
-            ++newIndex
-
-        program.splice(oldIndex, 1)
-        
-        program.splice(newIndex, 0, blockObj)
-
-        if (newIndex >= programDiv.children.length)
-            programDiv.appendChild(element)
-        else
-            programDiv.insertBefore(element, programDiv.children[newIndex])
-
-        run()
+  if (data.startsWith("add:")) {
+    // Создание нового блока
+    const blockType = data.split(":")[1];
+    if (blockType === "varDecl") {
+      createVarBlock();
+    } else if (blockType === "assign") {
+      createAssignBlock();
     }
-})
 
-document.addEventListener('dragover', (e) => {
-    e.preventDefault()
-})
+    run();
+  } else if (data.startsWith("move:")) {
+    // Перемещение существующего блока
+    const blockId = parseInt(data.split(":")[1], 10);
+    const oldIndex = program.findIndex((b) => b.id === blockId);
+    if (oldIndex === -1) return;
 
-document.addEventListener('drop', (e) => {
-    e.preventDefault()
-})
+    const blockObj = program[oldIndex];
+    const element = blockObj.ui.block;
+
+    let newIndex = getDropIndex(e.clientY);
+
+    if (newIndex >= oldIndex) ++newIndex;
+
+    program.splice(oldIndex, 1);
+
+    program.splice(newIndex, 0, blockObj);
+
+    if (newIndex >= programDiv.children.length) programDiv.appendChild(element);
+    else programDiv.insertBefore(element, programDiv.children[newIndex]);
+
+    run();
+  }
+});
+
+document.addEventListener("dragover", (e) => {
+  e.preventDefault();
+});
+
+document.addEventListener("drop", (e) => {
+  e.preventDefault();
+});
