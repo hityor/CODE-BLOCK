@@ -36,7 +36,7 @@ function createVarBlock() {
   input.addEventListener("input", function () {
     blockObj.raw = input.value;
 
-    run();
+    precompile();
   });
 
   block.appendChild(type);
@@ -81,10 +81,14 @@ function createAssignBlock() {
 
   select.addEventListener("change", function () {
     blockObj.variable = select.value;
+
+    precompile();
   });
 
   input.addEventListener("input", function () {
     blockObj.value = input.value;
+
+    precompile();
   });
 
   block.appendChild(select);
@@ -207,15 +211,19 @@ function validateProgram() {
   return errorsById;
 }
 
-function run() {
-  memoryView.innerHTML = "";
-
+function precompile() {
   updateAllAssignSelections();
 
   const errorsById = validateProgram();
   for (const block of program) block.errors = errorsById.get(block.id) ?? [];
 
   renderBlocks();
+}
+
+function run() {
+  memoryView.innerHTML = "";
+
+  precompile();
 
   const hasErrors = program.some((b) => b.errors.length > 0);
   if (hasErrors) {
@@ -249,11 +257,9 @@ function renderBlocks() {
 }
 
 function renderMemory(memory, memoryView) {
-  memoryView.innerHTML = "";
-
-  for (const variable in memory) {
+  for (const variable of memory) {
     const item = document.createElement("div");
-    item.textContent = `${variable} : ${memory[variable]}`;
+    item.innerHTML = `<b>${variable[0]}</b>: <b>${variable[1]}</b>`;
     memoryView.appendChild(item);
   }
 }
@@ -273,6 +279,6 @@ function parseNames(text) {
 
 function appendLogs(text) {
   const item = document.createElement("div");
-  item.textContent = text;
+  item.innerHTML = text;
   memoryView.appendChild(item);
 }

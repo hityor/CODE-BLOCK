@@ -124,25 +124,25 @@ class Tokenizer {
             this.emitExpression(expr.leftOperand);
             this.emitExpression(expr.rightOperand);
             const OperetorToken = {
-                '+': TokenCode.ADD,
-                '-': TokenCode.SUBTR,
-                '*': TokenCode.MULT,
-                '/': TokenCode.DIV,
-                '%': TokenCode.MOD,
-                '==': TokenCode.EQUAL,
-                '!=': TokenCode.N_EQUAL,
-                '<': TokenCode.LOWER,
-                '<=': TokenCode.LOWER_EQ,
-                '>': TokenCode.GREATER,
-                '>=': TokenCode.GREATER_EQ,
-                '&&': TokenCode.AND,
-                '||': TokenCode.OR
+                "+": TokenCode.ADD,
+                "-": TokenCode.SUBTR,
+                "*": TokenCode.MULT,
+                "/": TokenCode.DIV,
+                "%": TokenCode.MOD,
+                "==": TokenCode.EQUAL,
+                "!=": TokenCode.N_EQUAL,
+                "<": TokenCode.LOWER,
+                "<=": TokenCode.LOWER_EQ,
+                ">": TokenCode.GREATER,
+                ">=": TokenCode.GREATER_EQ,
+                "&&": TokenCode.AND,
+                "||": TokenCode.OR,
             };
             this.emit(OperetorToken[expr.operator]);
         }
         else if (expr instanceof UnaryExpr) {
             this.emitExpression(expr.operand);
-            if (expr.operator === '!') {
+            if (expr.operator === "!") {
                 this.emit(TokenCode.NOT);
             }
         }
@@ -158,7 +158,6 @@ class Tokenizer {
             this.emit(TokenCode.PRINT);
         }
         else if (stmt instanceof DeclareStatement) {
-            this.emitExpression(stmt.varName);
             this.emit(TokenCode.DECLARE_VAR, stmt.varName);
         }
         else if (stmt instanceof AssignStatement) {
@@ -181,8 +180,9 @@ class Tokenizer {
     }
 }
 class Executer {
-    constructor(instructions) {
+    constructor(instructions, output) {
         this.instructions = instructions;
+        this.output = output;
         this.binaryOperations = {
             [TokenCode.ADD]: (a, b) => a + b,
             [TokenCode.SUBTR]: (a, b) => a - b,
@@ -190,7 +190,7 @@ class Executer {
             [TokenCode.DIV]: (a, b) => a / b,
             [TokenCode.MOD]: (a, b) => a % b,
             [TokenCode.EQUAL]: (a, b) => a === b,
-            [TokenCode.NOT]: (a, b) => a !== b,
+            [TokenCode.N_EQUAL]: (a, b) => a !== b,
             [TokenCode.LOWER]: (a, b) => a < b,
             [TokenCode.LOWER_EQ]: (a, b) => a <= b,
             [TokenCode.GREATER]: (a, b) => a > b,
@@ -199,7 +199,7 @@ class Executer {
             [TokenCode.OR]: (a, b) => a || b,
         };
         this.unaryOperations = {
-            [TokenCode.NOT]: (op) => !op
+            [TokenCode.NOT]: (op) => !op,
         };
         this.valueStack = [];
         this.memoryStorage = new Map();
@@ -229,7 +229,7 @@ class Executer {
                     this.valueStack.push(instr.arg);
                     break;
                 case TokenCode.PRINT:
-                    console.log(this.valueStack.pop());
+                    this.output.print(this.valueStack.pop());
                     break;
                 case TokenCode.GET_VAR_VALUE: {
                     const varName = instr.arg;
@@ -240,12 +240,14 @@ class Executer {
                 case TokenCode.DECLARE_VAR: {
                     const varName = instr.arg;
                     this.memoryStorage.set(varName, 0);
+                    this.output.print(`Переменная <b>${varName}</b> объявлена`);
                     break;
                 }
                 case TokenCode.ASSIGN_VAR: {
                     const varName = instr.arg;
                     const value = this.valueStack.pop();
                     this.memoryStorage.set(varName, value);
+                    this.output.print(`Переменной <b>${varName}</b> присвоено значение <b>${value}</b>`);
                     break;
                 }
                 case TokenCode.JUMP:
@@ -262,32 +264,35 @@ class Executer {
             }
             ++this.instrId;
         }
+        this.output.onMemory(this.memoryStorage);
     }
 }
-let declare = new DeclareStatement('a');
-let lit1 = new IntegerLiteral(7);
-let var1 = new VariableExpr('a');
-let assign = new AssignStatement('a', lit1);
-let lit2 = new IntegerLiteral(5);
-let lit3 = new IntegerLiteral(11);
-let lit4 = new IntegerLiteral(3);
-let exp1 = new ArithmeticExpr('*', lit1, lit2);
-let exp2 = new ArithmeticExpr('-', var1, lit4);
-let exp3 = new ArithmeticExpr('+', exp1, exp2);
-let lit5 = new IntegerLiteral(39);
-let comp1 = new ArithmeticExpr('==', exp3, lit5);
-let comp2 = new ArithmeticExpr('<=', lit2, lit3);
-let cond = new LogicalExpr('&&', comp1, comp2);
-let pr1 = new PrintStatement(exp3);
-let trueBlock = new BlockStatement([pr1]);
-let pr2 = new PrintStatement(lit1);
-let falseBlock = new BlockStatement([pr2]);
-let ifSt = new IfStatement(cond, trueBlock, falseBlock);
-let pr3 = new PrintStatement(cond);
-let programm = new BlockStatement([declare, assign, ifSt, pr3]);
-let compiler = new Tokenizer();
-let instructions = compiler.compile(programm);
-for (let token of instructions)
-    console.log(TokenCode[token.token], token.arg);
-let ex = new Executer(instructions);
-ex.run();
+function test() {
+    let declare = new DeclareStatement("a");
+    let lit1 = new IntegerLiteral(7);
+    let var1 = new VariableExpr("a");
+    let assign = new AssignStatement("a", lit1);
+    let lit2 = new IntegerLiteral(5);
+    let lit3 = new IntegerLiteral(11);
+    let lit4 = new IntegerLiteral(3);
+    let exp1 = new ArithmeticExpr("*", lit1, lit2);
+    let exp2 = new ArithmeticExpr("-", var1, lit4);
+    let exp3 = new ArithmeticExpr("+", exp1, exp2);
+    let lit5 = new IntegerLiteral(39);
+    let comp1 = new CompareExpr("==", exp3, lit5);
+    let comp2 = new CompareExpr("<=", lit2, lit3);
+    let cond = new LogicalExpr("&&", comp1, comp2);
+    let pr1 = new PrintStatement(exp3);
+    let trueBlock = new BlockStatement([pr1]);
+    let pr2 = new PrintStatement(lit1);
+    let falseBlock = new BlockStatement([pr2]);
+    let ifSt = new IfStatement(cond, trueBlock, falseBlock);
+    let pr3 = new PrintStatement(cond);
+    let programm = new BlockStatement([declare, assign, ifSt, pr3]);
+    let compiler = new Tokenizer();
+    let instructions = compiler.compile(programm);
+    for (let token of instructions)
+        console.log(TokenCode[token.token], token.arg);
+    let ex = new Executer(instructions, console.log);
+    ex.run();
+}
