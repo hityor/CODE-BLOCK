@@ -35,7 +35,6 @@ function createVarBlock() {
   program.push(blockObj);
   input.addEventListener("input", function () {
     blockObj.raw = input.value;
-
     precompile();
   });
 
@@ -63,8 +62,26 @@ function createAssignBlock() {
   const span = document.createElement("span");
   span.textContent = " = ";
 
-  const input = document.createElement("input");
-  input.placeholder = 2;
+  const exprMode = document.createElement("select");
+  exprMode.className = "exprMode";
+  exprMode.innerHTML = `
+    <option value="single">value</option>
+    <option value="binary">binary</option>
+  `;
+
+  const leftOperand = createOperandBlock();
+
+  const operator = document.createElement("select");
+  operator.className = "exprOperator";
+  operator.innerHTML = `
+    <option value="+">+</option>
+    <option value="-">-</option>
+    <option value="*">*</option>
+    <option value="/">/</option>
+    <option value="%">%</option>
+  `;
+
+  const rightOperand = createOperandBlock();
 
   const errorBox = document.createElement("div");
   errorBox.className = "errorBox";
@@ -73,27 +90,39 @@ function createAssignBlock() {
     id: nextId++,
     type: "assign",
     variable: select.value,
-    value: "",
+    expression: {
+      mode: "single",
+      operator: "+",
+      left: leftOperand.model,
+      right: rightOperand.model,
+    },
     errors: [],
-    ui: { block, errorBox, select, input },
+    ui: { block, errorBox, select, exprMode, operator, leftOperand, rightOperand },
   };
   program.push(blockObj);
 
   select.addEventListener("change", function () {
     blockObj.variable = select.value;
-
     precompile();
   });
 
-  input.addEventListener("input", function () {
-    blockObj.value = input.value;
+  exprMode.addEventListener("change", function () {
+    blockObj.expression.mode = exprMode.value;
+    syncAssignUi(blockObj);
+    precompile();
+  });
 
+  operator.addEventListener("change", function () {
+    blockObj.expression.operator = operator.value;
     precompile();
   });
 
   block.appendChild(select);
   block.appendChild(span);
-  block.appendChild(input);
+  block.appendChild(exprMode);
+  block.appendChild(leftOperand.element);
+  block.appendChild(operator);
+  block.appendChild(rightOperand.element);
   block.appendChild(errorBox);
   programDiv.appendChild(block);
 
@@ -102,7 +131,69 @@ function createAssignBlock() {
     e.dataTransfer.effectAllowed = "move";
   });
 
+  syncAssignUi(blockObj);
   return block;
+}
+
+function createOperandBlock() {
+  const element = document.createElement("div");
+  element.className = "operandBlock";
+
+  const kind = document.createElement("select");
+  kind.innerHTML = `
+    <option value="const">num</option>
+    <option value="var">var</option>
+  `;
+
+  const valueInput = document.createElement("input");
+  valueInput.type = "text";
+  valueInput.placeholder = "0";
+  valueInput.value = "0";
+
+  const variableSelect = document.createElement("select");
+  updateSelectionOptions(variableSelect);
+
+  const model = {
+    kind: "const",
+    value: "0",
+    variable: variableSelect.value,
+    ui: { kind, valueInput, variableSelect },
+  };
+
+  function syncVisibility() {
+    const isConst = model.kind === "const";
+    valueInput.style.display = isConst ? "" : "none";
+    variableSelect.style.display = isConst ? "none" : "";
+  }
+
+  kind.addEventListener("change", function () {
+    model.kind = kind.value;
+    syncVisibility();
+    precompile();
+  });
+
+  valueInput.addEventListener("input", function () {
+    model.value = valueInput.value;
+    precompile();
+  });
+
+  variableSelect.addEventListener("change", function () {
+    model.variable = variableSelect.value;
+    precompile();
+  });
+
+  element.appendChild(kind);
+  element.appendChild(valueInput);
+  element.appendChild(variableSelect);
+  syncVisibility();
+
+  return { element, model };
+}
+
+function syncAssignUi(blockObj) {
+  const isBinary = blockObj.expression.mode === "binary";
+  blockObj.ui.operator.style.display = isBinary ? "" : "none";
+  blockObj.ui.rightOperand.element.style.display = isBinary ? "" : "none";
 }
 
 // Кнопка RUN
@@ -120,8 +211,8 @@ function getDeclaredNames() {
   return [...options];
 }
 
-function updateSelectionOptions(select) {
-  const previousValue = select.value;
+function updateSelectionOptions(select, preferredValue) {
+  const previousValue = preferredValue ?? select.value;
 
   const names = getDeclaredNames();
   select.innerHTML = "";
@@ -147,16 +238,37 @@ function updateSelectionOptions(select) {
   return "";
 }
 
+function updateOperandVariableSelection(operand) {
+  operand.ui.variableSelect.value = operand.variable;
+  operand.variable = updateSelectionOptions(operand.ui.variableSelect);
+}
+
 function updateAllAssignSelections() {
   for (const blockObj of program) {
     if (blockObj.type == "assign") {
-      const newVal = updateSelectionOptions(blockObj.ui.select);
-      blockObj.variable = newVal;
+      blockObj.variable = updateSelectionOptions(blockObj.ui.select, blockObj.variable);
+      updateOperandVariableSelection(blockObj.expression.left);
+      updateOperandVariableSelection(blockObj.expression.right);
     }
   }
 }
 
 // ==== ENGINE ====
+function operandToAst(operand) {
+  if (operand.kind === "const") return new IntegerLiteral(Number(operand.value));
+  return new VariableExpr(operand.variable);
+}
+
+function buildExpressionAst(assignBlock) {
+  const expression = assignBlock.expression;
+  const left = operandToAst(expression.left);
+
+  if (expression.mode === "single") return left;
+
+  const right = operandToAst(expression.right);
+  return new ArithmeticExpr(expression.operator, left, right);
+}
+
 function buildAstFromProgram() {
   const statements = [];
 
@@ -169,14 +281,30 @@ function buildAstFromProgram() {
     }
 
     if (block.type === "assign") {
-      const n = Number(block.value);
-      statements.push(
-        new AssignStatement(block.variable, new IntegerLiteral(n)),
-      );
+      statements.push(new AssignStatement(block.variable, buildExpressionAst(block)));
     }
   }
 
   return new BlockStatement(statements);
+}
+
+function validateOperand(operand, declared, errors, sideName) {
+  if (operand.kind === "const") {
+    const n = Number(operand.value);
+    if (operand.value === "") errors.push(`Пустое ${sideName} значение`);
+    else if (Number.isNaN(n)) errors.push(`${sideName} должно быть числом`);
+    else if (!Number.isInteger(n)) errors.push(`${sideName} должно быть целым`);
+    return;
+  }
+
+  if (!operand.variable) {
+    errors.push(`Не выбрана ${sideName} переменная`);
+    return;
+  }
+
+  if (!declared.has(operand.variable)) {
+    errors.push(`Не объявлена ${sideName} переменная: ${operand.variable}`);
+  }
 }
 
 function validateProgram() {
@@ -196,13 +324,25 @@ function validateProgram() {
 
     if (block.type === "assign") {
       if (!block.variable) errors.push("Не выбрана переменная");
-      else if (!declared.has(block.variable))
-        errors.push(`Не объявлена: ${block.variable}`);
+      else if (!declared.has(block.variable)) errors.push(`Не объявлена: ${block.variable}`);
 
-      const n = Number(block.value);
-      if (block.value === "") errors.push("Пустое значение");
-      else if (Number.isNaN(n)) errors.push("Значение должно быть числом");
-      else if (!Number.isInteger(n)) errors.push("Число должно быть целым");
+      validateOperand(block.expression.left, declared, errors, "left");
+
+      if (block.expression.mode === "binary") {
+        validateOperand(block.expression.right, declared, errors, "right");
+
+        if (
+          (block.expression.operator === "/" || block.expression.operator === "%") &&
+          block.expression.right.kind === "const"
+        ) {
+          const rightValue = Number(block.expression.right.value);
+          if (!Number.isNaN(rightValue) && rightValue === 0) {
+            errors.push("Деление на ноль");
+          }
+        }
+      } else if (block.expression.mode !== "single") {
+        errors.push("Некорректный режим выражения");
+      }
     }
 
     errorsById.set(block.id, errors);

@@ -141,3 +141,28 @@ input {
 
   background-color: #ffffff;
 }
+
+.exprMode,
+.exprOperator {
+  width: 95px;
+}
+
+.operandBlock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px dashed #9ca3af;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.operandBlock input,
+.operandBlock select {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.operandBlock input {
+  width: 76px;
+}
