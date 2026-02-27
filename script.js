@@ -9,7 +9,11 @@ let nextId = 1;
 const domById = new Map();
 
 // ==== UI ====
-function createOperandBlock() {
+function makeOperandModel() {
+  return { kind: "const", value: "0", variable: "" };
+}
+
+function makeOperandDom(operandModel) {
   const element = document.createElement("div");
   element.className = "operandBlock";
 
@@ -25,46 +29,33 @@ function createOperandBlock() {
   valueInput.value = "0";
 
   const variableSelect = document.createElement("select");
-  updateSelectionOptions(variableSelect);
-
-  const model = {
-    kind: "const",
-    value: "0",
-    variable: variableSelect.value,
-  };
 
   function syncVisibility() {
-    const isConst = model.kind === "const";
+    const isConst = operandModel.kind === "const";
     valueInput.style.display = isConst ? "" : "none";
     variableSelect.style.display = isConst ? "none" : "";
   }
 
   kind.addEventListener("change", function () {
-    model.kind = kind.value;
-    syncVisibility();
+    operandModel.kind = kind.value;
     touch();
   });
 
   valueInput.addEventListener("input", function () {
-    model.value = valueInput.value;
+    operandModel.value = valueInput.value;
     touch();
   });
 
   variableSelect.addEventListener("change", function () {
-    model.variable = variableSelect.value;
+    operandModel.variable = variableSelect.value;
     touch();
   });
 
   element.appendChild(kind);
   element.appendChild(valueInput);
   element.appendChild(variableSelect);
-  syncVisibility();
 
-  return {
-    element,
-    model,
-    ui: { kind, valueInput, variableSelect, syncVisibility },
-  };
+  return { element, kind, valueInput, variableSelect, syncVisibility };
 }
 
 // Кнопка RUN
@@ -233,8 +224,8 @@ function render() {
 function run() {
   memoryView.innerHTML = "";
 
-  validateAndStoreErrors()
-  render()
+  validateAndStoreErrors();
+  render();
 
   if (program.some((b) => b.errors.length > 0)) {
     appendLogs("Есть ошибки");
@@ -263,8 +254,8 @@ function syncCanvasOrder() {
 }
 
 function touch() {
-  validateAndStoreErrors()
-  render()
+  validateAndStoreErrors();
+  render();
 }
 
 function makeVarDeclModel() {
@@ -279,8 +270,8 @@ function makeAssignModel() {
     expression: {
       mode: "single",
       operator: "+",
-      left: { kind: "const", value: "0", variable: "" },
-      right: { kind: "const", value: "0", variable: "" },
+      left: makeOperandModel(),
+      right: makeOperandModel(),
     },
     errors: [],
   };
@@ -348,7 +339,7 @@ function ensureBlockDom(blockObj) {
       <option value="binary">binary</option>
     `;
 
-    const leftOperand = createOperandBlock();
+    const leftOperandUi = makeOperandDom(blockObj.expression.left);
     const operator = document.createElement("select");
     operator.className = "exprOperator";
     operator.innerHTML = `
@@ -358,7 +349,7 @@ function ensureBlockDom(blockObj) {
       <option value="/">/</option>
       <option value="%">%</option>
     `;
-    const rightOperand = createOperandBlock();
+    const rightOperandUi = makeOperandDom(blockObj.expression.right);
 
     const errorBox = document.createElement("div");
     errorBox.className = "errorBox";
@@ -366,9 +357,9 @@ function ensureBlockDom(blockObj) {
     block.appendChild(select);
     block.appendChild(span);
     block.appendChild(exprMode);
-    block.appendChild(leftOperand.element);
+    block.appendChild(leftOperandUi.element);
     block.appendChild(operator);
-    block.appendChild(rightOperand.element);
+    block.appendChild(rightOperandUi.element);
     block.appendChild(errorBox);
 
     select.addEventListener("change", function () {
@@ -397,16 +388,25 @@ function ensureBlockDom(blockObj) {
       select,
       exprMode,
       operator,
-      leftOperandElement: leftOperand.element,
-      rightOperandElement: rightOperand.element,
-      leftOperandUi: leftOperand.ui,
-      rightOperandUi: rightOperand.ui,
+      leftOperandElement: leftOperandUi.element,
+      rightOperandElement: rightOperandUi.element,
+      leftOperandUi,
+      rightOperandUi,
     };
     domById.set(blockObj.id, ui);
     return ui;
   }
 
   throw new Error("Неизвестный тип блока " + blockObj.type);
+}
+
+function renderOperand(operandModel, operandUi) {
+  operandUi.kind.value = operandModel.kind;
+  operandUi.valueInput.value = operandModel.value;
+  operandUi.variableSelect.value = operandModel.variable;
+
+  updateOperandVariableSelection(operandModel, operandUi);
+  operandUi.syncVisibility();
 }
 
 function renderBlock(blockObj) {
@@ -421,15 +421,8 @@ function renderBlock(blockObj) {
 
     ui.exprMode.value = blockObj.expression.mode;
 
-    ui.leftOperandUi.kind.value = blockObj.expression.left.kind;
-    ui.leftOperandUi.valueInput.value = blockObj.expression.left.value;
-    ui.leftOperandUi.variableSelect.value = blockObj.expression.left.variable;
-    ui.leftOperandUi.syncVisibility();
-
-    ui.rightOperandUi.kind.value = blockObj.expression.right.kind;
-    ui.rightOperandUi.valueInput.value = blockObj.expression.right.value;
-    ui.rightOperandUi.variableSelect.value = blockObj.expression.right.variable;
-    ui.rightOperandUi.syncVisibility();
+    renderOperand(blockObj.expression.left, ui.leftOperandUi)
+    renderOperand(blockObj.expression.right, ui.rightOperandUi)
 
     updateOperandVariableSelection(blockObj.expression.left, ui.leftOperandUi);
     updateOperandVariableSelection(
@@ -448,12 +441,6 @@ function renderBlock(blockObj) {
   } else {
     ui.errorBox.textContent = "";
     ui.block.className = "blockSuccess";
-  }
-}
-
-function renderBlocks() {
-  for (const blockObj of program) {
-    renderBlock(blockObj);
   }
 }
 
