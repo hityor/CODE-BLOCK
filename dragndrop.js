@@ -63,11 +63,6 @@ programDiv.addEventListener("drop", (e) => {
     if (newIndex >= oldIndex) ++newIndex;
 
     moveBlockById(blockId, newIndex)
-
-    if (newIndex >= programDiv.children.length) programDiv.appendChild(element);
-    else programDiv.insertBefore(element, programDiv.children[newIndex]);
-
-    run();
   }
 });
 

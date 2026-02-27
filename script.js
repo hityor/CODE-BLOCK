@@ -414,7 +414,17 @@ function run() {
   executer.run();
 }
 
+function syncCanvasOrder() {
+  for (const blockObj of program) {
+    const ui = domById.get(blockObj.id);
+    if (!ui) continue;
+
+    programDiv.appendChild(ui.block);
+  }
+}
+
 function touch() {
+  syncCanvasOrder();
   precompile();
 }
 
