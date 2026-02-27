@@ -11,6 +11,19 @@ function getDropIndex(mouseY) {
   return elements.length;
 }
 
+function moveBlockById(blockId, newIndex) {
+  const oldIndex = program.findIndex(b => b.id === blockId)
+  if (oldIndex === -1) return;
+
+  newIndex = Math.max(0, Math.min(newIndex, program.length - 1))
+
+  if (newIndex === oldIndex) return;
+
+  const [blockObj] = program.splice(oldIndex, 1)
+  program.splice(newIndex, 0, blockObj)
+  touch()
+}
+
 blockTools.forEach((item) => {
   item.addEventListener("dragstart", (e) => {
     e.dataTransfer.setData("text/plain", "add:" + item.id);
@@ -34,15 +47,8 @@ programDiv.addEventListener("drop", (e) => {
   if (!data) return;
 
   if (data.startsWith("add:")) {
-    // Создание нового блока
-    const blockType = data.split(":")[1];
-    if (blockType === "varDecl") {
-      createVarBlock();
-    } else if (blockType === "assign") {
-      createAssignBlock();
-    }
-
-    run();
+    const blockType = data.split(":")[1]
+    addBlock(blockType)
   } else if (data.startsWith("move:")) {
     // Перемещение существующего блока
     const blockId = parseInt(data.split(":")[1], 10);
@@ -54,12 +60,9 @@ programDiv.addEventListener("drop", (e) => {
     if (!element) return;
 
     let newIndex = getDropIndex(e.clientY);
-
     if (newIndex >= oldIndex) ++newIndex;
 
-    program.splice(oldIndex, 1);
-
-    program.splice(newIndex, 0, blockObj);
+    moveBlockById(blockId, newIndex)
 
     if (newIndex >= programDiv.children.length) programDiv.appendChild(element);
     else programDiv.insertBefore(element, programDiv.children[newIndex]);

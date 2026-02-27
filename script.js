@@ -266,13 +266,16 @@ function updateAllAssignSelections() {
   for (const blockObj of program) {
     if (blockObj.type !== "assign") continue;
 
-    const ui = domById.get(blockObj.id)
-    if (!ui) continue
+    const ui = domById.get(blockObj.id);
+    if (!ui) continue;
 
-    blockObj.variable = updateSelectionOptions(ui.select, blockObj.variable)
+    blockObj.variable = updateSelectionOptions(ui.select, blockObj.variable);
 
-    updateOperandVariableSelection(blockObj.expression.left, ui.leftOperandUi)
-    updateOperandVariableSelection(blockObj.expression.right, ui.rightOperandUi)
+    updateOperandVariableSelection(blockObj.expression.left, ui.leftOperandUi);
+    updateOperandVariableSelection(
+      blockObj.expression.right,
+      ui.rightOperandUi,
+    );
   }
 }
 
@@ -409,6 +412,16 @@ function run() {
   });
 
   executer.run();
+}
+
+function touch() {
+  precompile();
+}
+
+function addBlock(blockType) {
+  if (blockType === "varDecl") createVarBlock();
+  else if (blockType == "assign") createAssignBlock();
+  touch();
 }
 
 // ==== RENDER ====
