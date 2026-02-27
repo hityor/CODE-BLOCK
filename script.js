@@ -220,20 +220,23 @@ function validateProgram() {
   return errorsById;
 }
 
-function precompile() {
+function validateAndStoreErrors() {
   const errorsById = validateProgram();
   for (const block of program) block.errors = errorsById.get(block.id) ?? [];
+}
 
-  renderBlocks();
+function render() {
+  for (const blockObj of program) renderBlock(blockObj);
+  syncCanvasOrder();
 }
 
 function run() {
   memoryView.innerHTML = "";
 
-  precompile();
+  validateAndStoreErrors()
+  render()
 
-  const hasErrors = program.some((b) => b.errors.length > 0);
-  if (hasErrors) {
+  if (program.some((b) => b.errors.length > 0)) {
     appendLogs("Есть ошибки");
     return;
   }
@@ -260,8 +263,8 @@ function syncCanvasOrder() {
 }
 
 function touch() {
-  precompile();
-  syncCanvasOrder();
+  validateAndStoreErrors()
+  render()
 }
 
 function makeVarDeclModel() {
