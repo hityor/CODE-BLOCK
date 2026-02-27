@@ -6,22 +6,24 @@ function getDropIndex(mouseY) {
   for (let i = 0; i < elements.length; i++) {
     const rect = elements[i].getBoundingClientRect();
 
-    if (rect.top < mouseY && mouseY < rect.top + rect.height) return i;
+    const mid = rect.top + rect.height / 2
+    if (mouseY < mid) return i
   }
   return elements.length;
 }
 
 function moveBlockById(blockId, newIndex) {
-  const oldIndex = program.findIndex(b => b.id === blockId)
+  const oldIndex = program.findIndex((b) => b.id === blockId);
   if (oldIndex === -1) return;
 
-  newIndex = Math.max(0, Math.min(newIndex, program.length - 1))
+  newIndex = Math.max(0, Math.min(newIndex, program.length));
 
   if (newIndex === oldIndex) return;
 
-  const [blockObj] = program.splice(oldIndex, 1)
-  program.splice(newIndex, 0, blockObj)
-  touch()
+  const [blockObj] = program.splice(oldIndex, 1);
+  if (newIndex > oldIndex) newIndex--;
+  program.splice(newIndex, 0, blockObj);
+  touch();
 }
 
 blockTools.forEach((item) => {
@@ -47,22 +49,12 @@ programDiv.addEventListener("drop", (e) => {
   if (!data) return;
 
   if (data.startsWith("add:")) {
-    const blockType = data.split(":")[1]
-    addBlock(blockType)
+    const blockType = data.split(":")[1];
+    addBlock(blockType);
   } else if (data.startsWith("move:")) {
-    // Перемещение существующего блока
     const blockId = parseInt(data.split(":")[1], 10);
-    const oldIndex = program.findIndex((b) => b.id === blockId);
-    if (oldIndex === -1) return;
-
-    const blockObj = program[oldIndex];
-    const element = domById.get(blockObj.id).block;
-    if (!element) return;
-
     let newIndex = getDropIndex(e.clientY);
-    if (newIndex >= oldIndex) ++newIndex;
-
-    moveBlockById(blockId, newIndex)
+    moveBlockById(blockId, newIndex);
   }
 });
 
