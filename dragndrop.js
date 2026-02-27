@@ -1,4 +1,4 @@
-const blockTools = document.querySelectorAll(".blockTool");
+﻿const blockTools = document.querySelectorAll(".blockTool");
 
 function getDropIndex(mouseY) {
   const elements = Array.from(programDiv.children);
@@ -50,7 +50,8 @@ programDiv.addEventListener("drop", (e) => {
     if (oldIndex === -1) return;
 
     const blockObj = program[oldIndex];
-    const element = blockObj.ui.block;
+    const element = domById.get(blockObj.id).block;
+    if (!element) return;
 
     let newIndex = getDropIndex(e.clientY);
 

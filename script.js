@@ -7,6 +7,7 @@ const memoryView = document.getElementById("logContent");
 const program = [];
 let memory = {};
 let nextId = 1;
+const domById = new Map();
 
 // ==== UI ====
 function createVarBlock() {
@@ -29,10 +30,12 @@ function createVarBlock() {
     type: "varDecl",
     raw: "",
     errors: [],
-    ui: { block, errorBox, input },
   };
 
   program.push(blockObj);
+
+  domById.set(blockObj.id, { block, errorBox, input });
+
   input.addEventListener("input", function () {
     blockObj.raw = input.value;
     precompile();
@@ -97,9 +100,20 @@ function createAssignBlock() {
       right: rightOperand.model,
     },
     errors: [],
-    ui: { block, errorBox, select, exprMode, operator, leftOperand, rightOperand },
   };
   program.push(blockObj);
+
+  domById.set(blockObj.id, {
+    block,
+    errorBox,
+    select,
+    exprMode,
+    operator,
+    leftOperandElement: leftOperand.element,
+    rightOperandElement: rightOperand.element,
+    leftOperandUi: leftOperand.ui,
+    rightOperandUi: rightOperand.ui,
+  });
 
   select.addEventListener("change", function () {
     blockObj.variable = select.value;
@@ -157,7 +171,6 @@ function createOperandBlock() {
     kind: "const",
     value: "0",
     variable: variableSelect.value,
-    ui: { kind, valueInput, variableSelect },
   };
 
   function syncVisibility() {
@@ -187,13 +200,16 @@ function createOperandBlock() {
   element.appendChild(variableSelect);
   syncVisibility();
 
-  return { element, model };
+  return { element, model, ui: { kind, valueInput, variableSelect } };
 }
 
 function syncAssignUi(blockObj) {
+  const ui = domById.get(blockObj.id);
+  if (!ui) return;
+
   const isBinary = blockObj.expression.mode === "binary";
-  blockObj.ui.operator.style.display = isBinary ? "" : "none";
-  blockObj.ui.rightOperand.element.style.display = isBinary ? "" : "none";
+  ui.operator.style.display = isBinary ? "" : "none";
+  ui.rightOperandElement.style.display = isBinary ? "" : "none";
 }
 
 // Кнопка RUN
@@ -238,24 +254,32 @@ function updateSelectionOptions(select, preferredValue) {
   return "";
 }
 
-function updateOperandVariableSelection(operand) {
-  operand.ui.variableSelect.value = operand.variable;
-  operand.variable = updateSelectionOptions(operand.ui.variableSelect);
+function updateOperandVariableSelection(operandModel, operandUi) {
+  operandUi.variableSelect.value = operandModel.variable;
+  operandModel.variable = updateSelectionOptions(
+    operandUi.variableSelect,
+    operandModel.variable,
+  );
 }
 
 function updateAllAssignSelections() {
   for (const blockObj of program) {
-    if (blockObj.type == "assign") {
-      blockObj.variable = updateSelectionOptions(blockObj.ui.select, blockObj.variable);
-      updateOperandVariableSelection(blockObj.expression.left);
-      updateOperandVariableSelection(blockObj.expression.right);
-    }
+    if (blockObj.type !== "assign") continue;
+
+    const ui = domById.get(blockObj.id)
+    if (!ui) continue
+
+    blockObj.variable = updateSelectionOptions(ui.select, blockObj.variable)
+
+    updateOperandVariableSelection(blockObj.expression.left, ui.leftOperandUi)
+    updateOperandVariableSelection(blockObj.expression.right, ui.rightOperandUi)
   }
 }
 
 // ==== ENGINE ====
 function operandToAst(operand) {
-  if (operand.kind === "const") return new IntegerLiteral(Number(operand.value));
+  if (operand.kind === "const")
+    return new IntegerLiteral(Number(operand.value));
   return new VariableExpr(operand.variable);
 }
 
@@ -281,7 +305,9 @@ function buildAstFromProgram() {
     }
 
     if (block.type === "assign") {
-      statements.push(new AssignStatement(block.variable, buildExpressionAst(block)));
+      statements.push(
+        new AssignStatement(block.variable, buildExpressionAst(block)),
+      );
     }
   }
 
@@ -324,7 +350,8 @@ function validateProgram() {
 
     if (block.type === "assign") {
       if (!block.variable) errors.push("Не выбрана переменная");
-      else if (!declared.has(block.variable)) errors.push(`Не объявлена: ${block.variable}`);
+      else if (!declared.has(block.variable))
+        errors.push(`Не объявлена: ${block.variable}`);
 
       validateOperand(block.expression.left, declared, errors, "left");
 
@@ -332,7 +359,8 @@ function validateProgram() {
         validateOperand(block.expression.right, declared, errors, "right");
 
         if (
-          (block.expression.operator === "/" || block.expression.operator === "%") &&
+          (block.expression.operator === "/" ||
+            block.expression.operator === "%") &&
           block.expression.right.kind === "const"
         ) {
           const rightValue = Number(block.expression.right.value);
@@ -386,12 +414,15 @@ function run() {
 // ==== RENDER ====
 function renderBlocks() {
   for (const blockObj of program) {
+    const ui = domById.get(blockObj.id);
+    if (!ui) continue;
+
     if (blockObj.errors.length > 0) {
-      blockObj.ui.errorBox.textContent = blockObj.errors.join(", ");
-      blockObj.ui.block.className = "blockError";
+      ui.errorBox.textContent = blockObj.errors.join(", ");
+      ui.block.className = "blockError";
     } else {
-      blockObj.ui.errorBox.textContent = "";
-      blockObj.ui.block.className = "blockSuccess";
+      ui.errorBox.textContent = "";
+      ui.block.className = "blockSuccess";
     }
   }
 }
