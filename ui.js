@@ -1,17 +1,14 @@
-// ==== DOM REFS ====
+import { program } from "./state.js";
+import { validateProgram } from "./validate.js";
+import { runProgram } from "./engine.js";
+import { initDnD } from "./dnd.js";
+import { parseNames, isValidVarName } from "./utils.js";
+
 const programDiv = document.getElementById("canvas");
 const runBtn = document.getElementById("runBtn");
 const memoryView = document.getElementById("logContent");
 
-// ==== STATE ====
-const program = [];
-let nextId = 1;
 const domById = new Map();
-
-// ==== UI ====
-function makeOperandModel() {
-  return { kind: "const", value: "0", variable: "" };
-}
 
 function makeOperandDom(operandModel) {
   const element = document.createElement("div");
@@ -58,9 +55,15 @@ function makeOperandDom(operandModel) {
   return { element, kind, valueInput, variableSelect, syncVisibility };
 }
 
-// Кнопка RUN
 runBtn.addEventListener("click", function () {
-  run();
+  runProgram(program, {
+    parseNames,
+    validateAndStoreErrors,
+    render,
+    appendLogs,
+    renderMemory,
+    memoryView,
+  });
 });
 
 function getDeclaredNames() {
@@ -108,111 +111,8 @@ function updateOperandVariableSelection(operandModel, operandUi) {
   );
 }
 
-// ==== ENGINE ====
-function operandToAst(operand) {
-  if (operand.kind === "const")
-    return new IntegerLiteral(Number(operand.value));
-  return new VariableExpr(operand.variable);
-}
-
-function buildExpressionAst(assignBlock) {
-  const expression = assignBlock.expression;
-  const left = operandToAst(expression.left);
-
-  if (expression.mode === "single") return left;
-
-  const right = operandToAst(expression.right);
-  return new ArithmeticExpr(expression.operator, left, right);
-}
-
-function buildAstFromProgram() {
-  const statements = [];
-
-  for (const block of program) {
-    if (block.type === "varDecl") {
-      const names = parseNames(block.raw);
-      for (const name of names) {
-        statements.push(new DeclareStatement(name));
-      }
-    }
-
-    if (block.type === "assign") {
-      statements.push(
-        new AssignStatement(block.variable, buildExpressionAst(block)),
-      );
-    }
-  }
-
-  return new BlockStatement(statements);
-}
-
-function validateOperand(operand, declared, errors, sideName) {
-  if (operand.kind === "const") {
-    const n = Number(operand.value);
-    if (operand.value === "") errors.push(`Пустое ${sideName} значение`);
-    else if (Number.isNaN(n)) errors.push(`${sideName} должно быть числом`);
-    else if (!Number.isInteger(n)) errors.push(`${sideName} должно быть целым`);
-    return;
-  }
-
-  if (!operand.variable) {
-    errors.push(`Не выбрана ${sideName} переменная`);
-    return;
-  }
-
-  if (!declared.has(operand.variable)) {
-    errors.push(`Не объявлена ${sideName} переменная: ${operand.variable}`);
-  }
-}
-
-function validateProgram() {
-  const errorsById = new Map();
-  const declared = new Set();
-
-  for (const block of program) {
-    const errors = [];
-
-    if (block.type === "varDecl") {
-      const names = parseNames(block.raw);
-      for (const name of names)
-        if (!isValidVarName(name)) errors.push(`Некорректное имя: ${name}`);
-        else if (declared.has(name)) errors.push(`Дубликат: ${name}`);
-        else declared.add(name);
-    }
-
-    if (block.type === "assign") {
-      if (!block.variable) errors.push("Не выбрана переменная");
-      else if (!declared.has(block.variable))
-        errors.push(`Не объявлена: ${block.variable}`);
-
-      validateOperand(block.expression.left, declared, errors, "left");
-
-      if (block.expression.mode === "binary") {
-        validateOperand(block.expression.right, declared, errors, "right");
-
-        if (
-          (block.expression.operator === "/" ||
-            block.expression.operator === "%") &&
-          block.expression.right.kind === "const"
-        ) {
-          const rightValue = Number(block.expression.right.value);
-          if (!Number.isNaN(rightValue) && rightValue === 0) {
-            errors.push("Деление на ноль");
-          }
-        }
-      } else if (block.expression.mode !== "single") {
-        errors.push("Некорректный режим выражения");
-      }
-    }
-
-    errorsById.set(block.id, errors);
-  }
-
-  return errorsById;
-}
-
 function validateAndStoreErrors() {
-  const errorsById = validateProgram();
+  const errorsById = validateProgram(program);
   for (const block of program) block.errors = errorsById.get(block.id) ?? [];
 }
 
@@ -221,35 +121,22 @@ function render() {
   syncCanvasOrder();
 }
 
-function run() {
-  memoryView.innerHTML = "";
-
-  validateAndStoreErrors();
-  render();
-
-  if (program.some((b) => b.errors.length > 0)) {
-    appendLogs("Есть ошибки");
-    return;
-  }
-
-  const ast = buildAstFromProgram();
-  const compiler = new Tokenizer();
-  const instructions = compiler.compile(ast);
-
-  const executer = new Executer(instructions, {
-    print: appendLogs,
-    onMemory: (mem) => renderMemory(mem, memoryView),
-  });
-
-  executer.run();
-}
-
 function syncCanvasOrder() {
+  const desired = [];
+
   for (const blockObj of program) {
     const ui = domById.get(blockObj.id);
-    if (!ui) continue;
+    if (ui?.block) desired.push(ui.block);
+  }
 
-    programDiv.appendChild(ui.block);
+  let cursor = programDiv.firstChild;
+
+  for (const blockEl of desired) {
+    if (blockEl === cursor) {
+      cursor = cursor.nextSibling;
+      continue;
+    }
+    programDiv.insertBefore(blockEl, cursor);
   }
 }
 
@@ -258,32 +145,6 @@ function touch() {
   render();
 }
 
-function makeVarDeclModel() {
-  return { id: nextId++, type: "varDecl", raw: "", errors: [] };
-}
-
-function makeAssignModel() {
-  return {
-    id: nextId++,
-    type: "assign",
-    variable: "",
-    expression: {
-      mode: "single",
-      operator: "+",
-      left: makeOperandModel(),
-      right: makeOperandModel(),
-    },
-    errors: [],
-  };
-}
-
-function addBlock(blockType) {
-  if (blockType === "varDecl") program.push(makeVarDeclModel());
-  else if (blockType == "assign") program.push(makeAssignModel());
-  touch();
-}
-
-// ==== RENDER ====
 function ensureBlockDom(blockObj) {
   if (domById.has(blockObj.id)) return domById.get(blockObj.id);
 
@@ -421,14 +282,8 @@ function renderBlock(blockObj) {
 
     ui.exprMode.value = blockObj.expression.mode;
 
-    renderOperand(blockObj.expression.left, ui.leftOperandUi)
-    renderOperand(blockObj.expression.right, ui.rightOperandUi)
-
-    updateOperandVariableSelection(blockObj.expression.left, ui.leftOperandUi);
-    updateOperandVariableSelection(
-      blockObj.expression.right,
-      ui.rightOperandUi,
-    );
+    renderOperand(blockObj.expression.left, ui.leftOperandUi);
+    renderOperand(blockObj.expression.right, ui.rightOperandUi);
 
     const isBinary = blockObj.expression.mode === "binary";
     ui.operator.style.display = isBinary ? "" : "none";
@@ -452,21 +307,14 @@ function renderMemory(memory, memoryView) {
   }
 }
 
-// ==== UTILS ====
-function isValidVarName(name) {
-  const regex = /^[A-Za-z_][A-Za-z0-9_]*$/;
-  return regex.test(name);
-}
-
-function parseNames(text) {
-  return text
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item !== "");
-}
-
 function appendLogs(text) {
   const item = document.createElement("div");
   item.innerHTML = text;
   memoryView.appendChild(item);
+}
+
+export function initUI() {
+  initDnD(programDiv, touch)
+  validateAndStoreErrors();
+  render();
 }
