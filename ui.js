@@ -314,7 +314,7 @@ function appendLogs(text) {
 }
 
 export function initUI() {
-  initDnD(programDiv, touch)
+  initDnD(programDiv, touch);
   validateAndStoreErrors();
   render();
 }

@@ -39,7 +39,8 @@ export function initDnD(programDiv, touch) {
 
     if (data.startsWith("add:")) {
       const blockType = data.split(":")[1];
-      addBlock(blockType);
+      let addIndex = getDropIndex(e.clientY);
+      addBlock(blockType, addIndex);
       touch();
     } else if (data.startsWith("move:")) {
       const blockId = parseInt(data.split(":")[1], 10);

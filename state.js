@@ -24,9 +24,10 @@ function makeAssignModel() {
   };
 }
 
-export function addBlock(blockType) {
-  if (blockType === "varDecl") program.push(makeVarDeclModel());
-  else if (blockType == "assign") program.push(makeAssignModel());
+export function addBlock(blockType, addIndex) {
+  if (blockType === "varDecl") program.splice(addIndex, 0, makeVarDeclModel());
+  else if (blockType == "assign")
+    program.splice(addIndex, 0, makeAssignModel());
 }
 
 export function moveBlockById(blockId, newIndex) {
