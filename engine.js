@@ -1,23 +1,34 @@
 export function operandToAst(operand) {
-  if (operand.kind === "const")
-    return new IntegerLiteral(Number(operand.value));
+  return new IntegerLiteral(Number(operand.value));
   return new VariableExpr(operand.variable);
 }
 
-export function buildExpressionAst(assignBlock) {
-  const expression = assignBlock.expression;
-  const left = operandToAst(expression.left);
+export function buildAssignAst(assignBlock) {
+  if (assignBlock.children.length != 0) {
+    let expression = assignBlock.children[0];
 
-  if (expression.mode === "single") return left;
+    const left = buildAssignAst(expression.left);
+    const right = buildAssignAst(expression.right);
 
-  const right = operandToAst(expression.right);
-  return new ArithmeticExpr(expression.operator, left, right);
+    return new ArithmeticExpr(expression.operator, left, right);
+  } else return operandToAst(assignBlock.expression);
+}
+
+export function buildArithAst(arithBlock) {
+  let left = operandToAst(arithBlock.left);
+  let right = operandToAst(arithBlock.right);
+  if (arithBlock.children) {
+    if (arithBlock.children[0]) left = buildArithAst(arithBlock.children[0]);
+    if (arithBlock.children[1]) right = buildArithAst(arithBlock.children[1]);
+  }
+
+  return new ArithmeticExpr(arithBlock.operator, left, right);
 }
 
 export function buildAstFromProgram(program, parseNames) {
   const statements = [];
 
-  for (const block of program) {
+  for (const block of program.children) {
     if (block.type === "varDecl") {
       const names = parseNames(block.raw);
       for (const name of names) {
@@ -26,9 +37,12 @@ export function buildAstFromProgram(program, parseNames) {
     }
 
     if (block.type === "assign") {
-      statements.push(
-        new AssignStatement(block.variable, buildExpressionAst(block)),
-      );
+      let expression;
+      if (block.children.length != 0)
+        expression = buildArithAst(block.children[0]);
+      else expression = operandToAst(block.expression);
+
+      statements.push(new AssignStatement(block.variable, expression));
     }
   }
 
@@ -51,7 +65,7 @@ export function runProgram(
   validateAndStoreErrors();
   render();
 
-  if (program.some((b) => b.errors.length > 0)) {
+  if (program.children.some((b) => b.errors.length > 0)) {
     appendLogs("Есть ошибки");
     return;
   }
@@ -60,10 +74,9 @@ export function runProgram(
   const compiler = new Tokenizer();
   const instructions = compiler.compile(ast);
 
-  const executer = new Executer(instructions, {
-    print: appendLogs,
-    onMemory: (mem) => renderMemory(mem, memoryView),
-  });
+  const executer = new Executer(instructions, appendLogs, (mem) =>
+    renderMemory(mem, memoryView),
+  );
 
   executer.run();
 }

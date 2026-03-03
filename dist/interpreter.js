@@ -1,18 +1,17 @@
 "use strict";
-class Literal {
+class IntegerLiteral {
+    constructor(value) {
+        this.value = value;
+        this.value = Math.floor(value);
+    }
+}
+class BooleanLiteral {
     constructor(value) {
         this.value = value;
     }
 }
-class IntegerLiteral extends Literal {
+class StringLiteral {
     constructor(value) {
-        super(value);
-        this.value = value;
-    }
-}
-class BooleanLiteral extends Literal {
-    constructor(value) {
-        super(value);
         this.value = value;
     }
 }
@@ -70,6 +69,20 @@ class IfStatement {
         this.elseBranch = elseBranch;
     }
 }
+class WhileStatement {
+    constructor(condition, body) {
+        this.condition = condition;
+        this.body = body;
+    }
+}
+class ForStatement {
+    constructor(initializer, condition, increment, body) {
+        this.initializer = initializer;
+        this.condition = condition;
+        this.increment = increment;
+        this.body = body;
+    }
+}
 var TokenCode;
 (function (TokenCode) {
     TokenCode[TokenCode["PUSH_VALUE"] = 0] = "PUSH_VALUE";
@@ -117,13 +130,16 @@ class Tokenizer {
         else if (expr instanceof BooleanLiteral) {
             this.emit(TokenCode.PUSH_VALUE, expr.value);
         }
+        else if (expr instanceof StringLiteral) {
+            this.emit(TokenCode.PUSH_VALUE, expr.value);
+        }
         else if (expr instanceof VariableExpr) {
             this.emit(TokenCode.GET_VAR_VALUE, expr.name);
         }
         else if (expr instanceof BinaryExpr) {
             this.emitExpression(expr.leftOperand);
             this.emitExpression(expr.rightOperand);
-            const OperetorToken = {
+            const OperatorToken = {
                 "+": TokenCode.ADD,
                 "-": TokenCode.SUBTR,
                 "*": TokenCode.MULT,
@@ -138,7 +154,7 @@ class Tokenizer {
                 "&&": TokenCode.AND,
                 "||": TokenCode.OR,
             };
-            this.emit(OperetorToken[expr.operator]);
+            this.emit(OperatorToken[expr.operator]);
         }
         else if (expr instanceof UnaryExpr) {
             this.emitExpression(expr.operand);
@@ -164,7 +180,7 @@ class Tokenizer {
             this.emitExpression(stmt.expression);
             this.emit(TokenCode.ASSIGN_VAR, stmt.varName);
         }
-        if (stmt instanceof IfStatement) {
+        else if (stmt instanceof IfStatement) {
             this.emitExpression(stmt.condition);
             const jumpIfFalseIndex = this.emit(TokenCode.JUMP_IF_FALSE, null);
             this.emitStatement(stmt.thenBranch);
@@ -177,12 +193,43 @@ class Tokenizer {
             const end = this.instructions.length;
             this.patch(jumpIndex, end);
         }
+        else if (stmt instanceof WhileStatement) {
+            const conditionStart = this.instructions.length;
+            this.emitExpression(stmt.condition);
+            const exitJumpIndex = this.emit(TokenCode.JUMP_IF_FALSE, null);
+            this.emitStatement(stmt.body);
+            this.emit(TokenCode.JUMP, conditionStart);
+            const exitAddress = this.instructions.length;
+            this.patch(exitJumpIndex, exitAddress);
+        }
+        else if (stmt instanceof ForStatement) {
+            if (stmt.initializer)
+                this.emitStatement(stmt.initializer);
+            const conditionStart = this.instructions.length;
+            if (stmt.condition) {
+                this.emitExpression(stmt.condition);
+                const exitJumpIndex = this.emit(TokenCode.JUMP_IF_FALSE, null);
+                this.emitStatement(stmt.body);
+                if (stmt.increment)
+                    this.emitStatement(stmt.increment);
+                this.emit(TokenCode.JUMP, conditionStart);
+                const exitAddress = this.instructions.length;
+                this.patch(exitJumpIndex, exitAddress);
+            }
+            else {
+                this.emitStatement(stmt.body);
+                if (stmt.increment)
+                    this.emitStatement(stmt.increment);
+                this.emit(TokenCode.JUMP, conditionStart);
+            }
+        }
     }
 }
 class Executer {
-    constructor(instructions, output) {
+    constructor(instructions, output, onMemory) {
         this.instructions = instructions;
         this.output = output;
+        this.onMemory = onMemory;
         this.binaryOperations = {
             [TokenCode.ADD]: (a, b) => a + b,
             [TokenCode.SUBTR]: (a, b) => a - b,
@@ -229,7 +276,7 @@ class Executer {
                     this.valueStack.push(instr.arg);
                     break;
                 case TokenCode.PRINT:
-                    this.output.print(this.valueStack.pop());
+                    this.output(this.valueStack.pop());
                     break;
                 case TokenCode.GET_VAR_VALUE: {
                     const varName = instr.arg;
@@ -240,14 +287,16 @@ class Executer {
                 case TokenCode.DECLARE_VAR: {
                     const varName = instr.arg;
                     this.memoryStorage.set(varName, 0);
-                    this.output.print(`Переменная <b>${varName}</b> объявлена`);
+                    if (this.output != console.log)
+                        this.output(`Переменная <b>${varName}</b> объявлена`);
                     break;
                 }
                 case TokenCode.ASSIGN_VAR: {
                     const varName = instr.arg;
-                    const value = this.valueStack.pop();
+                    const value = Math.floor(this.valueStack.pop());
                     this.memoryStorage.set(varName, value);
-                    this.output.print(`Переменной <b>${varName}</b> присвоено значение <b>${value}</b>`);
+                    if (this.output != console.log)
+                        this.output(`Переменной <b>${varName}</b> присвоено значение <b>${value}</b>`);
                     break;
                 }
                 case TokenCode.JUMP:
@@ -264,35 +313,37 @@ class Executer {
             }
             ++this.instrId;
         }
-        this.output.onMemory(this.memoryStorage);
+        if (this.onMemory)
+            this.onMemory(this.memoryStorage);
     }
 }
 function test() {
-    let declare = new DeclareStatement("a");
-    let lit1 = new IntegerLiteral(7);
-    let var1 = new VariableExpr("a");
-    let assign = new AssignStatement("a", lit1);
-    let lit2 = new IntegerLiteral(5);
-    let lit3 = new IntegerLiteral(11);
-    let lit4 = new IntegerLiteral(3);
-    let exp1 = new ArithmeticExpr("*", lit1, lit2);
-    let exp2 = new ArithmeticExpr("-", var1, lit4);
-    let exp3 = new ArithmeticExpr("+", exp1, exp2);
-    let lit5 = new IntegerLiteral(39);
-    let comp1 = new CompareExpr("==", exp3, lit5);
-    let comp2 = new CompareExpr("<=", lit2, lit3);
-    let cond = new LogicalExpr("&&", comp1, comp2);
-    let pr1 = new PrintStatement(exp3);
-    let trueBlock = new BlockStatement([pr1]);
-    let pr2 = new PrintStatement(lit1);
-    let falseBlock = new BlockStatement([pr2]);
-    let ifSt = new IfStatement(cond, trueBlock, falseBlock);
-    let pr3 = new PrintStatement(cond);
-    let programm = new BlockStatement([declare, assign, ifSt, pr3]);
+    let declareI = new DeclareStatement("i");
+    let i = new VariableExpr("i");
+    let initValue = new IntegerLiteral(0);
+    let assignI = new AssignStatement("i", initValue);
+    let varI = new VariableExpr("i");
+    let limit = new IntegerLiteral(10);
+    let condition = new CompareExpr("<", varI, limit);
+    let two = new IntegerLiteral(2);
+    let zero = new IntegerLiteral(0);
+    let remainder = new ArithmeticExpr("%", i, two);
+    let isEven = new CompareExpr("==", remainder, zero);
+    let printEven = new PrintStatement(new StringLiteral("even"));
+    let printOdd = new PrintStatement(new StringLiteral("odd"));
+    let ifEven = new IfStatement(isEven, printEven, printOdd);
+    let printValue = new PrintStatement(i);
+    let one = new IntegerLiteral(1);
+    let increment = new ArithmeticExpr("+", i, one);
+    let assignIncrement = new AssignStatement("i", increment);
+    let loopBody = new BlockStatement([ifEven, printValue, assignIncrement]);
+    let whileLoop = new WhileStatement(condition, loopBody);
+    let program = new BlockStatement([declareI, assignI, whileLoop]);
     let compiler = new Tokenizer();
-    let instructions = compiler.compile(programm);
+    let instructions = compiler.compile(program);
     for (let token of instructions)
         console.log(TokenCode[token.token], token.arg);
     let ex = new Executer(instructions, console.log);
     ex.run();
 }
+//test();

@@ -1,10 +1,20 @@
-import { addBlock, moveBlockById } from "./state.js";
+import {
+  program,
+  putBlock,
+  moveBlockById,
+  makeArithmeticModel,
+  insertChildIntoParent,
+  moveBlockToParent,
+} from "./state.js";
 
-export function initDnD(programDiv, touch) {
-  const blockTools = document.querySelectorAll(".blockTool");
+export class DnD {
+  constructor(programDiv, touch) {
+    this.programDiv = programDiv;
+    this.touch = touch;
+  }
 
-  function getDropIndex(mouseY) {
-    const elements = Array.from(programDiv.children);
+  getDropIndex(mouseY) {
+    const elements = Array.from(this.programDiv.children);
 
     for (let i = 0; i < elements.length; i++) {
       const rect = elements[i].getBoundingClientRect();
@@ -14,47 +24,73 @@ export function initDnD(programDiv, touch) {
     return elements.length;
   }
 
-  blockTools.forEach((item) => {
-    item.addEventListener("dragstart", (e) => {
-      e.dataTransfer.setData("text/plain", "add:" + item.id);
+  init() {
+    const blockTools = document.querySelectorAll(".blockTool");
+    blockTools.forEach((item) => {
+      item.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", "add:" + item.id);
+      });
     });
-  });
 
-  programDiv.addEventListener("dragover", (e) => {
-    e.preventDefault();
+    document.addEventListener("dragover", (e) => {
+      e.preventDefault();
+    });
 
-    const data = e.dataTransfer.getData("text/plain");
+    document.addEventListener("drop", (e) => {
+      e.preventDefault();
+    });
+  }
 
-    if (data && data.startsWith("add:")) e.dataTransfer.dropEffect = "copy";
-    else if (data && data.startsWith("move:"))
-      e.dataTransfer.dropEffect = "move";
-  });
+  makeDropZone(zone) {
+    zone.addEventListener("dragover", (e) => {
+      e.preventDefault();
 
-  programDiv.addEventListener("drop", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+      const data = e.dataTransfer.getData("text/plain");
 
-    const data = e.dataTransfer.getData("text/plain");
-    if (!data) return;
+      if (data && data.startsWith("add:")) e.dataTransfer.dropEffect = "copy";
+      else if (data && data.startsWith("move:"))
+        e.dataTransfer.dropEffect = "move";
+    });
 
-    if (data.startsWith("add:")) {
-      const blockType = data.split(":")[1];
-      let addIndex = getDropIndex(e.clientY);
-      addBlock(blockType, addIndex);
-      touch();
-    } else if (data.startsWith("move:")) {
-      const blockId = parseInt(data.split(":")[1], 10);
-      let newIndex = getDropIndex(e.clientY);
-      moveBlockById(blockId, newIndex);
-      touch();
-    }
-  });
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-  document.addEventListener("dragover", (e) => {
-    e.preventDefault();
-  });
+      const data = e.dataTransfer.getData("text/plain");
+      if (!data) return;
 
-  document.addEventListener("drop", (e) => {
-    e.preventDefault();
-  });
+      if (data.startsWith("add:")) {
+        const blockType = data.split(":")[1];
+        let addIndex = this.getDropIndex(e.clientY);
+        putBlock(program, blockType, addIndex);
+        this.touch();
+      } else if (data.startsWith("move:")) {
+        const blockId = parseInt(data.split(":")[1], 10);
+        let newIndex = this.getDropIndex(e.clientY);
+        moveBlockById(blockId, newIndex);
+        this.touch();
+      }
+    });
+  }
+
+  makeArithDropZone(zone, parent, operandType) {
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const data = e.dataTransfer.getData("text/plain");
+      if (!data) return;
+
+      if (data.startsWith("add:")) {
+        const blockType = data.split(":")[1];
+        const newBlock = makeArithmeticModel();
+        insertChildIntoParent(parent, newBlock, operandType);
+        this.touch();
+      } else if (data.startsWith("move:")) {
+        const blockId = parseInt(data.split(":")[1], 10);
+        moveBlockToParent(blockId, parent, operandType);
+        this.touch();
+      }
+    });
+  }
 }

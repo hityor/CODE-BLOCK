@@ -6,7 +6,9 @@ interface Literal extends Expression {
 }
 
 class IntegerLiteral implements Literal {
-  constructor(public value: number) {}
+  constructor(public value: number) {
+    this.value = Math.floor(value);
+  }
 }
 
 class BooleanLiteral implements Literal {
@@ -271,7 +273,7 @@ class Executer {
     [TokenCode.NOT]: (op) => !op,
   };
 
-  private valueStack: Literal[] = [];
+  private valueStack: any[] = [];
   private memoryStorage = new Map<string, any>();
   private instrId = 0;
 
@@ -327,7 +329,7 @@ class Executer {
         }
         case TokenCode.ASSIGN_VAR: {
           const varName = instr.arg;
-          const value = this.valueStack.pop();
+          const value = Math.floor(this.valueStack.pop());
           this.memoryStorage.set(varName, value);
           if (this.output != console.log)
             this.output(
@@ -398,4 +400,4 @@ function test() {
   ex.run();
 }
 
-test();
+//test();
