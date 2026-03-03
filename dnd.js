@@ -3,6 +3,7 @@ import {
   putBlock,
   moveBlockById,
   makeArithmeticModel,
+  makeVarGetModel,
   insertChildIntoParent,
   moveBlockToParent,
 } from "./state.js";
@@ -83,7 +84,19 @@ export class DnD {
 
       if (data.startsWith("add:")) {
         const blockType = data.split(":")[1];
-        const newBlock = makeArithmeticModel();
+
+        let newBlock;
+        switch (blockType) {
+          case "arith":
+            newBlock = makeArithmeticModel();
+            break;
+          case "varGet":
+            newBlock = makeVarGetModel();
+            break;
+          default:
+            return;
+        }
+
         insertChildIntoParent(parent, newBlock, operandType);
         this.touch();
       } else if (data.startsWith("move:")) {

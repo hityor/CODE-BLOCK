@@ -52,14 +52,22 @@ function validateBlock(block, declared, errorsById) {
   }
 
   if (block.type === "arith") {
-    validateArithOperand(block.left, errors, "левый");
-    validateArithOperand(block.right, errors, "правый");
+    if (!block.children[0]) validateArithOperand(block.left, errors, "левый");
+    if (!block.children[1]) validateArithOperand(block.right, errors, "правый");
 
     if (block.operator === "/" || block.operator === "%") {
       const rightValue = Number(block.right.value);
       if (!Number.isNaN(rightValue) && rightValue === 0) {
         errors.push("Деление на ноль");
       }
+    }
+  }
+
+  if (block.type === "varGet") {
+    if (!block.variable) {
+      errors.push("Не выбрана переменная");
+    } else if (!declared.has(block.variable)) {
+      errors.push(`Не объявлена переменная: ${block.variable}`);
     }
   }
 

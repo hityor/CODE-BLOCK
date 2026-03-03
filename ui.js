@@ -292,6 +292,33 @@ function ensureBlockDom(blockObj) {
       domById.set(blockObj.id, ui);
       return ui;
     }
+    case "varGet": {
+      const block = document.createElement("div");
+      block.className = "blockSuccess";
+      block.draggable = true;
+
+      const select = document.createElement("select");
+
+      const errorBox = document.createElement("div");
+      errorBox.className = "errorBox";
+
+      block.appendChild(select);
+      block.appendChild(errorBox);
+
+      select.addEventListener("change", function () {
+        blockObj.variable = select.value;
+        touch();
+      });
+
+      block.addEventListener("dragstart", function (e) {
+        e.dataTransfer.setData("text/plain", `move:${blockObj.id}`);
+        e.dataTransfer.effectAllowed = "move";
+      });
+
+      const ui = { block, select, errorBox };
+      domById.set(blockObj.id, ui);
+      return ui;
+    }
   }
 
   throw new Error("Неизвестный тип блока " + blockObj.type);
@@ -321,6 +348,10 @@ function renderBlock(blockObj) {
     case "arith": {
       renderOperand(blockObj.left, ui.leftOperandUi);
       renderOperand(blockObj.right, ui.rightOperandUi);
+      break;
+    }
+    case "varGet": {
+      blockObj.variable = updateSelectionOptions(ui.select, blockObj.variable);
       break;
     }
   }

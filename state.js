@@ -33,6 +33,16 @@ export function makeArithmeticModel() {
   };
 }
 
+export function makeVarGetModel() {
+  return {
+    id: nextId++,
+    type: "varGet",
+    variable: "",
+    children: [],
+    errors: [],
+  };
+}
+
 export function putBlock(place, blockType, addIndex) {
   switch (blockType) {
     case "varDecl":
@@ -61,16 +71,10 @@ export function moveBlockById(blockId, newIndex) {
 }
 
 export function insertChildIntoParent(parentBlock, newBlock, operandType) {
-  const children = parentBlock.children;
-  if (operandType === "expression" || operandType === "left") {
-    if (children.length > 0) children[0] = newBlock;
-    else children.push(newBlock);
+  if (operandType === "left" || operandType === "expression") {
+    parentBlock.children[0] = newBlock;
   } else if (operandType === "right") {
-    if (children.length > 1) children[2] = newBlock;
-    else if (children.length === 1) children.push(newBlock);
-    else {
-      children[1] = newBlock;
-    }
+    parentBlock.children[1] = newBlock;
   }
 }
 

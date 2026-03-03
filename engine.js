@@ -1,28 +1,24 @@
 export function operandToAst(operand) {
-  return new IntegerLiteral(Number(operand.value));
-  return new VariableExpr(operand.variable);
-}
-
-export function buildAssignAst(assignBlock) {
-  if (assignBlock.children.length != 0) {
-    let expression = assignBlock.children[0];
-
-    const left = buildAssignAst(expression.left);
-    const right = buildAssignAst(expression.right);
-
-    return new ArithmeticExpr(expression.operator, left, right);
-  } else return operandToAst(assignBlock.expression);
-}
-
-export function buildArithAst(arithBlock) {
-  let left = operandToAst(arithBlock.left);
-  let right = operandToAst(arithBlock.right);
-  if (arithBlock.children) {
-    if (arithBlock.children[0]) left = buildArithAst(arithBlock.children[0]);
-    if (arithBlock.children[1]) right = buildArithAst(arithBlock.children[1]);
+  if (operand.variable) {
+    return new VariableExpr(operand.variable);
+  } else {
+    return new IntegerLiteral(Number(operand.value));
   }
+}
 
-  return new ArithmeticExpr(arithBlock.operator, left, right);
+function buildExprFromBlock(block) {
+  if (block.type === "arith") {
+    const left = block.children[0]
+      ? buildExprFromBlock(block.children[0])
+      : operandToAst(block.left);
+    const right = block.children[1]
+      ? buildExprFromBlock(block.children[1])
+      : operandToAst(block.right);
+    return new ArithmeticExpr(block.operator, left, right);
+  } else if (block.type === "varGet") {
+    return new VariableExpr(block.variable);
+  }
+  throw new Error("Неизвестный тип блока в выражении");
 }
 
 export function buildAstFromProgram(program, parseNames) {
@@ -38,10 +34,11 @@ export function buildAstFromProgram(program, parseNames) {
 
     if (block.type === "assign") {
       let expression;
-      if (block.children.length != 0)
-        expression = buildArithAst(block.children[0]);
-      else expression = operandToAst(block.expression);
-
+      if (block.children.length > 0) {
+        expression = buildExprFromBlock(block.children[0]);
+      } else {
+        expression = operandToAst(block.expression);
+      }
       statements.push(new AssignStatement(block.variable, expression));
     }
   }
