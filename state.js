@@ -125,9 +125,9 @@ export function moveBlockById(blockId, newIndex) {
 
   if (newIndex === oldIndex) return;
 
-  const [blockObj] = program.children.splice(oldIndex, 1);
+  const [blockModel] = program.children.splice(oldIndex, 1);
   if (newIndex > oldIndex) newIndex--;
-  program.children.splice(newIndex, 0, blockObj);
+  program.children.splice(newIndex, 0, blockModel);
 }
 
 function canInsertExpressionIntoParent(parentBlock, operandType) {

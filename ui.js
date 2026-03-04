@@ -7,9 +7,9 @@ import { parseNames, isValidVarName } from "./utils.js";
 const programDiv = document.getElementById("canvas");
 const runBtn = document.getElementById("runBtn");
 const memoryView = document.getElementById("logContent");
-const dnd = new DnD(programDiv, touch);
+const dnd = new DnD(programDiv, validateAndRender);
 
-const domById = new Map();
+const viewById = new Map();
 
 function walkBlock(block, visit) {
   visit(block);
@@ -48,7 +48,7 @@ export function makeOperandDom(operandModel, parent, operandType) {
 
   valueInput.addEventListener("input", function () {
     operandModel.value = valueInput.value;
-    touch();
+    validateAndRender();
   });
 
   element.appendChild(valueInput);
@@ -144,7 +144,7 @@ function renderOperand(operandModel, operandUi, childBlock) {
     renderBlockContent(childBlock);
     operandUi.valueInput.style.display = "none";
 
-    const expectedChildElement = domById.get(childBlock.id).block;
+    const expectedChildElement = viewById.get(childBlock.id).block;
     if (currentChildElement !== expectedChildElement) {
       operandUi.childHost.innerHTML = "";
       operandUi.childHost.appendChild(expectedChildElement);
@@ -157,47 +157,47 @@ function renderOperand(operandModel, operandUi, childBlock) {
   }
 }
 
-function renderBlockContent(blockObj) {
-  const ui = domById.get(blockObj.id);
+function renderBlockContent(blockModel) {
+  const blockView = viewById.get(blockModel.id);
 
-  if (blockObj.type === "assign") {
-    renderOperand(blockObj.expression, ui.operandUi, blockObj.children[0]);
+  if (blockModel.type === "assign") {
+    renderOperand(blockModel.expression, blockView.operandUi, blockModel.children[0]);
     return;
   }
 
-  if (blockObj.type === "arith") {
-    renderOperand(blockObj.left, ui.leftOperandUi, blockObj.children[0]);
-    renderOperand(blockObj.right, ui.rightOperandUi, blockObj.children[1]);
+  if (blockModel.type === "arith") {
+    renderOperand(blockModel.left, blockView.leftOperandUi, blockModel.children[0]);
+    renderOperand(blockModel.right, blockView.rightOperandUi, blockModel.children[1]);
     return;
   }
 
-  if (blockObj.type === "if") {
+  if (blockModel.type === "if") {
     renderOperand(
-      blockObj.left,
-      ui.leftOperandUi,
-      blockObj.conditionChildren[0],
+      blockModel.left,
+      blockView.leftOperandUi,
+      blockModel.conditionChildren[0],
     );
     renderOperand(
-      blockObj.right,
-      ui.rightOperandUi,
-      blockObj.conditionChildren[1],
+      blockModel.right,
+      blockView.rightOperandUi,
+      blockModel.conditionChildren[1],
     );
-    syncStatementsOrder(blockObj, ui.thenCanvas);
+    syncStatementsOrder(blockModel, blockView.thenCanvas);
   }
 }
 
 function syncStatementsOrder(containerModel, containerElement) {
   const desired = [];
 
-  for (const blockObj of containerModel.children) {
-    renderBlock(blockObj);
-    desired.push(domById.get(blockObj.id).block);
+  for (const blockModel of containerModel.children) {
+    renderBlock(blockModel);
+    desired.push(viewById.get(blockModel.id).block);
   }
 
   syncDomOrder(containerElement, desired);
 
-  for (const blockObj of containerModel.children) {
-    renderBlockContent(blockObj);
+  for (const blockModel of containerModel.children) {
+    renderBlockContent(blockModel);
   }
 }
 
@@ -205,14 +205,14 @@ function render() {
   syncStatementsOrder(program, programDiv);
 }
 
-function touch() {
+function validateAndRender() {
   validateAndStoreErrors();
   render();
 }
 
-function makeDragStart(blockObj, blockEl) {
+function makeDragStart(blockModel, blockEl) {
   blockEl.addEventListener("dragstart", function (e) {
-    e.dataTransfer.setData("text/plain", `move:${blockObj.id}`);
+    e.dataTransfer.setData("text/plain", `move:${blockModel.id}`);
     e.dataTransfer.effectAllowed = "move";
   });
 }
@@ -223,10 +223,10 @@ function makeErrorBox() {
   return errorBox;
 }
 
-function ensureBlockDom(blockObj) {
-  if (domById.has(blockObj.id)) return domById.get(blockObj.id);
+function ensureBlockDom(blockModel) {
+  if (viewById.has(blockModel.id)) return viewById.get(blockModel.id);
 
-  if (blockObj.type === "varDecl") {
+  if (blockModel.type === "varDecl") {
     const block = document.createElement("div");
     block.className = "blockSuccess";
     block.draggable = true;
@@ -245,18 +245,18 @@ function ensureBlockDom(blockObj) {
     block.appendChild(errorBox);
 
     input.addEventListener("input", function () {
-      blockObj.raw = input.value;
-      touch();
+      blockModel.raw = input.value;
+      validateAndRender();
     });
 
-    makeDragStart(blockObj, block);
+    makeDragStart(blockModel, block);
 
-    const ui = { block, input, errorBox };
-    domById.set(blockObj.id, ui);
-    return ui;
+    const blockView = { block, input, errorBox };
+    viewById.set(blockModel.id, blockView);
+    return blockView;
   }
 
-  if (blockObj.type === "assign") {
+  if (blockModel.type === "assign") {
     const block = document.createElement("div");
     block.className = "blockSuccess";
     block.draggable = true;
@@ -265,7 +265,7 @@ function ensureBlockDom(blockObj) {
     const span = document.createElement("span");
     span.textContent = " = ";
 
-    const operandUi = makeOperandDom(blockObj.expression, blockObj, "expression");
+    const operandUi = makeOperandDom(blockModel.expression, blockModel, "expression");
     const errorBox = makeErrorBox();
 
     block.appendChild(select);
@@ -274,23 +274,23 @@ function ensureBlockDom(blockObj) {
     block.appendChild(errorBox);
 
     select.addEventListener("change", function () {
-      blockObj.variable = select.value;
-      touch();
+      blockModel.variable = select.value;
+      validateAndRender();
     });
 
-    makeDragStart(blockObj, block);
+    makeDragStart(blockModel, block);
 
-    const ui = { block, errorBox, select, operandUi };
-    domById.set(blockObj.id, ui);
-    return ui;
+    const blockView = { block, errorBox, select, operandUi };
+    viewById.set(blockModel.id, blockView);
+    return blockView;
   }
 
-  if (blockObj.type === "arith") {
+  if (blockModel.type === "arith") {
     const block = document.createElement("div");
     block.className = "blockSuccess";
     block.draggable = true;
 
-    const leftOperandUi = makeOperandDom(blockObj.left, blockObj, "left");
+    const leftOperandUi = makeOperandDom(blockModel.left, blockModel, "left");
 
     const operator = document.createElement("select");
     operator.className = "exprOperator";
@@ -301,7 +301,7 @@ function ensureBlockDom(blockObj) {
       <option value="/">/</option>
       <option value="%">%</option>`;
 
-    const rightOperandUi = makeOperandDom(blockObj.right, blockObj, "right");
+    const rightOperandUi = makeOperandDom(blockModel.right, blockModel, "right");
     const errorBox = makeErrorBox();
 
     block.appendChild(leftOperandUi.element);
@@ -310,18 +310,18 @@ function ensureBlockDom(blockObj) {
     block.appendChild(errorBox);
 
     operator.addEventListener("change", function () {
-      blockObj.operator = operator.value;
-      touch();
+      blockModel.operator = operator.value;
+      validateAndRender();
     });
 
-    makeDragStart(blockObj, block);
+    makeDragStart(blockModel, block);
 
-    const ui = { block, errorBox, operator, leftOperandUi, rightOperandUi };
-    domById.set(blockObj.id, ui);
-    return ui;
+    const blockView = { block, errorBox, operator, leftOperandUi, rightOperandUi };
+    viewById.set(blockModel.id, blockView);
+    return blockView;
   }
 
-  if (blockObj.type === "varGet") {
+  if (blockModel.type === "varGet") {
     const block = document.createElement("div");
     block.className = "blockSuccess";
     block.draggable = true;
@@ -333,18 +333,18 @@ function ensureBlockDom(blockObj) {
     block.appendChild(errorBox);
 
     select.addEventListener("change", function () {
-      blockObj.variable = select.value;
-      touch();
+      blockModel.variable = select.value;
+      validateAndRender();
     });
 
-    makeDragStart(blockObj, block);
+    makeDragStart(blockModel, block);
 
-    const ui = { block, select, errorBox };
-    domById.set(blockObj.id, ui);
-    return ui;
+    const blockView = { block, select, errorBox };
+    viewById.set(blockModel.id, blockView);
+    return blockView;
   }
 
-  if (blockObj.type === "if") {
+  if (blockModel.type === "if") {
     const block = document.createElement("div");
     block.className = "blockSuccess";
     block.draggable = true;
@@ -355,7 +355,7 @@ function ensureBlockDom(blockObj) {
     const ifLabel = document.createElement("span");
     ifLabel.textContent = "if";
 
-    const leftOperandUi = makeOperandDom(blockObj.left, blockObj, "condLeft");
+    const leftOperandUi = makeOperandDom(blockModel.left, blockModel, "condLeft");
 
     const comparator = document.createElement("select");
     comparator.className = "exprOperator";
@@ -367,7 +367,7 @@ function ensureBlockDom(blockObj) {
       <option value=">=">&gt;=</option>
       <option value="<=">&lt;=</option>`;
 
-    const rightOperandUi = makeOperandDom(blockObj.right, blockObj, "condRight");
+    const rightOperandUi = makeOperandDom(blockModel.right, blockModel, "condRight");
 
     const thenLabel = document.createElement("span");
     thenLabel.textContent = "then";
@@ -380,7 +380,7 @@ function ensureBlockDom(blockObj) {
 
     const thenCanvas = document.createElement("div");
     thenCanvas.className = "ifBodyCanvas";
-    dnd.makeDropZone(thenCanvas, blockObj);
+    dnd.makeDropZone(thenCanvas, blockModel);
 
     const errorBox = makeErrorBox();
 
@@ -389,13 +389,13 @@ function ensureBlockDom(blockObj) {
     block.appendChild(errorBox);
 
     comparator.addEventListener("change", function () {
-      blockObj.comparator = comparator.value;
-      touch();
+      blockModel.comparator = comparator.value;
+      validateAndRender();
     });
 
-    makeDragStart(blockObj, block);
+    makeDragStart(blockModel, block);
 
-    const ui = {
+    const blockView = {
       block,
       errorBox,
       comparator,
@@ -403,34 +403,34 @@ function ensureBlockDom(blockObj) {
       rightOperandUi,
       thenCanvas,
     };
-    domById.set(blockObj.id, ui);
-    return ui;
+    viewById.set(blockModel.id, blockView);
+    return blockView;
   }
 
-  throw new Error("Unknown block type " + blockObj.type);
+  throw new Error("Unknown block type " + blockModel.type);
 }
 
-function renderBlock(blockObj) {
-  const ui = ensureBlockDom(blockObj);
+function renderBlock(blockModel) {
+  const blockView = ensureBlockDom(blockModel);
 
-  if (blockObj.type === "varDecl") {
-    ui.input.value = blockObj.raw;
-  } else if (blockObj.type === "assign") {
-    blockObj.variable = updateSelectionOptions(ui.select, blockObj.variable);
-  } else if (blockObj.type === "arith") {
-    ui.operator.value = blockObj.operator;
-  } else if (blockObj.type === "varGet") {
-    blockObj.variable = updateSelectionOptions(ui.select, blockObj.variable);
-  } else if (blockObj.type === "if") {
-    ui.comparator.value = blockObj.comparator;
+  if (blockModel.type === "varDecl") {
+    blockView.input.value = blockModel.raw;
+  } else if (blockModel.type === "assign") {
+    blockModel.variable = updateSelectionOptions(blockView.select, blockModel.variable);
+  } else if (blockModel.type === "arith") {
+    blockView.operator.value = blockModel.operator;
+  } else if (blockModel.type === "varGet") {
+    blockModel.variable = updateSelectionOptions(blockView.select, blockModel.variable);
+  } else if (blockModel.type === "if") {
+    blockView.comparator.value = blockModel.comparator;
   }
 
-  if (blockObj.errors.length > 0) {
-    ui.errorBox.textContent = blockObj.errors.join(", ");
-    ui.block.className = "blockError";
+  if (blockModel.errors.length > 0) {
+    blockView.errorBox.textContent = blockModel.errors.join(", ");
+    blockView.block.className = "blockError";
   } else {
-    ui.errorBox.textContent = "";
-    ui.block.className = "blockSuccess";
+    blockView.errorBox.textContent = "";
+    blockView.block.className = "blockSuccess";
   }
 }
 

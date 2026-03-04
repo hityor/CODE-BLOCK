@@ -10,9 +10,9 @@ import {
 } from "./state.js";
 
 export class DnD {
-  constructor(programDiv, touch) {
+  constructor(programDiv, validateAndRender) {
     this.programDiv = programDiv;
-    this.touch = touch;
+    this.validateAndRender = validateAndRender;
   }
 
   getDropIndex(zone, mouseY) {
@@ -71,12 +71,12 @@ export class DnD {
 
         const addIndex = this.getDropIndex(zone, e.clientY);
         putBlock(place, blockType, addIndex);
-        this.touch();
+        this.validateAndRender();
       } else if (data.startsWith("move:")) {
         const blockId = parseInt(data.split(":")[1], 10);
         const newIndex = this.getDropIndex(zone, e.clientY);
         moveStatementBlock(blockId, place, newIndex);
-        this.touch();
+        this.validateAndRender();
       }
     });
   }
@@ -122,11 +122,11 @@ export class DnD {
         }
 
         insertChildIntoParent(parent, newBlock, operandType);
-        this.touch();
+        this.validateAndRender();
       } else if (data.startsWith("move:")) {
         const blockId = parseInt(data.split(":")[1], 10);
         moveBlockToParent(blockId, parent, operandType);
-        this.touch();
+        this.validateAndRender();
       }
     });
   }
