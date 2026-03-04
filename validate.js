@@ -21,7 +21,7 @@ function validateIntegerOperand(operand, errors, operandSide) {
   }
 }
 
-function validateExpressionTarget(
+function validateOperand(
   childBlock,
   operandModel,
   declared,
@@ -51,7 +51,7 @@ function validateExpressionBlock(block, declared, errorsById) {
   }
 
   if (block.type === "arith") {
-    validateExpressionTarget(
+    validateOperand(
       block.children[0],
       block.left,
       declared,
@@ -59,7 +59,7 @@ function validateExpressionBlock(block, declared, errorsById) {
       errors,
       "Левый",
     );
-    validateExpressionTarget(
+    validateOperand(
       block.children[1],
       block.right,
       declared,
@@ -72,7 +72,10 @@ function validateExpressionBlock(block, declared, errorsById) {
       errors.push(`Неизвестный арифметический оператор: ${block.operator}`);
     }
 
-    if ((block.operator === "/" || block.operator === "%") && !block.children[1]) {
+    if (
+      (block.operator === "/" || block.operator === "%") &&
+      !block.children[1]
+    ) {
       const rightValue = Number(block.right.value);
       if (!Number.isNaN(rightValue) && rightValue === 0) {
         errors.push("Деление на ноль");
@@ -95,13 +98,19 @@ function validateVarDecl(block, declared, errors) {
   for (const name of names) {
     if (!isValidVarName(name)) {
       errors.push(`Некорректное имя переменной: ${name}`);
-    } else if (localDeclared.has(name) || declared.has(name)) {
-      errors.push(`Дубликат переменной: ${name}`);
+    } else if (localDeclared.has(name)) {
+      errors.push(`Дубликат переменной в объявлении: ${name}`);
+    } else if (declared.has(name)) {
+      errors.push(`Переменная уже объявлена в другом блоке: ${name}`);
     } else {
       localDeclared.add(name);
-      declared.add(name);
     }
   }
+  
+  for (const name of localDeclared) {
+    declared.add(name);
+  }
+  
 }
 
 function validateAssign(block, declared, errorsById, errors) {
@@ -123,7 +132,7 @@ function validateIf(block, declared, errorsById, errors) {
     errors.push(`Неизвестный оператор сравнения: ${block.comparator}`);
   }
 
-  validateExpressionTarget(
+  validateOperand(
     block.conditionChildren[0],
     block.left,
     declared,
@@ -131,7 +140,7 @@ function validateIf(block, declared, errorsById, errors) {
     errors,
     "Левая часть условия",
   );
-  validateExpressionTarget(
+  validateOperand(
     block.conditionChildren[1],
     block.right,
     declared,
@@ -166,7 +175,7 @@ function validateStatementBlock(block, declared, errorsById) {
     return;
   }
 
-  errors.push(`Неизвестный тип блока-инструкции: ${block.type}`);
+  errors.push(`Неизвестный тип блока: ${block.type}`);
   errorsById.set(block.id, errors);
 }
 
