@@ -1,9 +1,9 @@
-export function operandToAst(operand) {
+function operandToAst(operand) {
   if (operand.variable) {
     return new VariableExpr(operand.variable);
-  } else {
-    return new IntegerLiteral(Number(operand.value));
   }
+
+  return new IntegerLiteral(Number(operand.value));
 }
 
 function buildExprFromBlock(block) {
@@ -15,35 +15,84 @@ function buildExprFromBlock(block) {
       ? buildExprFromBlock(block.children[1])
       : operandToAst(block.right);
     return new ArithmeticExpr(block.operator, left, right);
-  } else if (block.type === "varGet") {
+  }
+
+  if (block.type === "varGet") {
     return new VariableExpr(block.variable);
   }
-  throw new Error("Неизвестный тип блока в выражении");
+
+  throw new Error("Unsupported expression block type: " + block.type);
 }
 
-export function buildAstFromProgram(program, parseNames) {
+function expressionFromTarget(childBlock, operandModel) {
+  if (childBlock) return buildExprFromBlock(childBlock);
+  return operandToAst(operandModel);
+}
+
+function buildStatements(blocks, parseNames) {
   const statements = [];
 
-  for (const block of program.children) {
+  for (const block of blocks) {
     if (block.type === "varDecl") {
       const names = parseNames(block.raw);
       for (const name of names) {
         statements.push(new DeclareStatement(name));
       }
+      continue;
     }
 
     if (block.type === "assign") {
-      let expression;
-      if (block.children.length > 0) {
-        expression = buildExprFromBlock(block.children[0]);
-      } else {
-        expression = operandToAst(block.expression);
-      }
+      const expression = expressionFromTarget(block.children[0], block.expression);
       statements.push(new AssignStatement(block.variable, expression));
+      continue;
+    }
+
+    if (block.type === "if") {
+      const left = expressionFromTarget(block.conditionChildren[0], block.left);
+      const right = expressionFromTarget(block.conditionChildren[1], block.right);
+      const condition = new CompareExpr(block.comparator, left, right);
+      const body = new BlockStatement(buildStatements(block.children, parseNames));
+      statements.push(new IfStatement(condition, body));
+      continue;
     }
   }
 
-  return new BlockStatement(statements);
+  return statements;
+}
+
+function hasAnyErrorsInBlock(block) {
+  if (block.errors?.length > 0) return true;
+
+  if (block.type === "assign" && block.children[0]) {
+    if (hasAnyErrorsInBlock(block.children[0])) return true;
+  }
+
+  if (block.type === "arith") {
+    if (block.children[0] && hasAnyErrorsInBlock(block.children[0])) return true;
+    if (block.children[1] && hasAnyErrorsInBlock(block.children[1])) return true;
+  }
+
+  if (block.type === "if") {
+    if (
+      block.conditionChildren[0] &&
+      hasAnyErrorsInBlock(block.conditionChildren[0])
+    )
+      return true;
+    if (
+      block.conditionChildren[1] &&
+      hasAnyErrorsInBlock(block.conditionChildren[1])
+    )
+      return true;
+    for (const child of block.children) {
+      if (hasAnyErrorsInBlock(child)) return true;
+    }
+  }
+
+  return false;
+}
+
+export function buildAstFromProgram(program, parseNames) {
+  return new BlockStatement(buildStatements(program.children, parseNames));
 }
 
 export function runProgram(
@@ -62,8 +111,8 @@ export function runProgram(
   validateAndStoreErrors();
   render();
 
-  if (program.children.some((b) => b.errors.length > 0)) {
-    appendLogs("Есть ошибки");
+  if (program.children.some((block) => hasAnyErrorsInBlock(block))) {
+    appendLogs("В программе есть ошибки валидации");
     return;
   }
 

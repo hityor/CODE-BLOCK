@@ -1,76 +1,172 @@
 import { parseNames, isValidVarName } from "./utils.js";
 
-function validateAssign(assign, declared, errors) {
-  if (assign.children[0]) return;
+const COMPARE_OPERATORS = new Set([">", "<", "==", "!=", ">=", "<="]);
+const ARITH_OPERATORS = new Set(["+", "-", "*", "/", "%"]);
 
-  const n = Number(assign.expression.value);
-  if (assign.expression.value === "")
-    errors.push(`Пустое присваиваемое значение`);
-  else if (Number.isNaN(n))
-    errors.push(`Присваиваемое значение должно быть числом`);
-  else if (!Number.isInteger(n))
-    errors.push(`Присваиваемое значение должно быть целым числом`);
-
-  // if (!operand.variable) {
-  //   errors.push(`Не выбрана переменная`);
-  //   return;
-  // }
-
-  // if (!declared.has(operand.variable)) {
-  //   errors.push(`Не объявлена ${operandSide} переменная: ${operand.variable}`);
-  // }
-}
-
-function validateArithOperand(operand, errors, operandSide) {
+function validateIntegerOperand(operand, errors, operandSide) {
   const n = Number(operand.value);
-  if (operand.value === "") errors.push(`Пустой ${operandSide} операнд`);
-  else if (Number.isNaN(n))
-    errors.push(`${operandSide} операнд должен быть числом`);
-  else if (!Number.isInteger(n))
-    errors.push(`${operandSide} должен быть целым числом`);
-}
 
-function validateBlock(block, declared, errorsById) {
-  for (const child of block.children)
-    if (child) validateBlock(child, declared, errorsById);
-  let errors = [];
-
-  if (block.type === "varDecl") {
-    const names = parseNames(block.raw);
-    for (const name of names)
-      if (!isValidVarName(name)) errors.push(`Некорректное имя: ${name}`);
-      else if (declared.has(name)) errors.push(`Дубликат: ${name}`);
-      else declared.add(name);
+  if (operand.value === "") {
+    errors.push(`${operandSide}: пустой операнд`);
+    return;
   }
 
-  if (block.type === "assign") {
-    if (!block.variable) errors.push("Не выбрана переменная");
-    else if (!declared.has(block.variable))
-      errors.push(`Не объявлена: ${block.variable}`);
+  if (Number.isNaN(n)) {
+    errors.push(`${operandSide}: должно быть число`);
+    return;
+  }
 
-    validateAssign(block, declared, errors);
+  if (!Number.isInteger(n)) {
+    errors.push(`${operandSide}: должно быть целое число`);
+  }
+}
+
+function validateExpressionTarget(
+  childBlock,
+  operandModel,
+  declared,
+  errorsById,
+  errors,
+  side,
+) {
+  if (childBlock) {
+    validateExpressionBlock(childBlock, declared, errorsById);
+  } else {
+    validateIntegerOperand(operandModel, errors, side);
+  }
+}
+
+function validateExpressionBlock(block, declared, errorsById) {
+  const errors = [];
+
+  if (block.type === "varGet") {
+    if (!block.variable) {
+      errors.push("Переменная не выбрана");
+    } else if (!declared.has(block.variable)) {
+      errors.push(`Переменная не объявлена: ${block.variable}`);
+    }
+
+    errorsById.set(block.id, errors);
+    return;
   }
 
   if (block.type === "arith") {
-    if (!block.children[0]) validateArithOperand(block.left, errors, "левый");
-    if (!block.children[1]) validateArithOperand(block.right, errors, "правый");
+    validateExpressionTarget(
+      block.children[0],
+      block.left,
+      declared,
+      errorsById,
+      errors,
+      "Левый",
+    );
+    validateExpressionTarget(
+      block.children[1],
+      block.right,
+      declared,
+      errorsById,
+      errors,
+      "Правый",
+    );
 
-    if (block.operator === "/" || block.operator === "%") {
+    if (!ARITH_OPERATORS.has(block.operator)) {
+      errors.push(`Неизвестный арифметический оператор: ${block.operator}`);
+    }
+
+    if ((block.operator === "/" || block.operator === "%") && !block.children[1]) {
       const rightValue = Number(block.right.value);
       if (!Number.isNaN(rightValue) && rightValue === 0) {
         errors.push("Деление на ноль");
       }
     }
+
+    errorsById.set(block.id, errors);
+    return;
   }
 
-  if (block.type === "varGet") {
-    if (!block.variable) {
-      errors.push("Не выбрана переменная");
-    } else if (!declared.has(block.variable)) {
-      errors.push(`Не объявлена переменная: ${block.variable}`);
+  errors.push(`Блок "${block.type}" нельзя использовать как выражение`);
+  errorsById.set(block.id, errors);
+}
+
+function validateVarDecl(block, declared, errors) {
+  const names = parseNames(block.raw);
+  if (names.length === 0) errors.push("Объявление переменной пустое");
+
+  const localDeclared = new Set();
+  for (const name of names) {
+    if (!isValidVarName(name)) {
+      errors.push(`Некорректное имя переменной: ${name}`);
+    } else if (localDeclared.has(name) || declared.has(name)) {
+      errors.push(`Дубликат переменной: ${name}`);
+    } else {
+      localDeclared.add(name);
+      declared.add(name);
     }
   }
+}
 
+function validateAssign(block, declared, errorsById, errors) {
+  if (!block.variable) {
+    errors.push("Переменная для присваивания не выбрана");
+  } else if (!declared.has(block.variable)) {
+    errors.push(`Переменная не объявлена: ${block.variable}`);
+  }
+
+  if (block.children[0]) {
+    validateExpressionBlock(block.children[0], declared, errorsById);
+  } else {
+    validateIntegerOperand(block.expression, errors, "Присваиваемое значение");
+  }
+}
+
+function validateIf(block, declared, errorsById, errors) {
+  if (!COMPARE_OPERATORS.has(block.comparator)) {
+    errors.push(`Неизвестный оператор сравнения: ${block.comparator}`);
+  }
+
+  validateExpressionTarget(
+    block.conditionChildren[0],
+    block.left,
+    declared,
+    errorsById,
+    errors,
+    "Левая часть условия",
+  );
+  validateExpressionTarget(
+    block.conditionChildren[1],
+    block.right,
+    declared,
+    errorsById,
+    errors,
+    "Правая часть условия",
+  );
+
+  for (const child of block.children) {
+    validateStatementBlock(child, declared, errorsById);
+  }
+}
+
+function validateStatementBlock(block, declared, errorsById) {
+  const errors = [];
+
+  if (block.type === "varDecl") {
+    validateVarDecl(block, declared, errors);
+    errorsById.set(block.id, errors);
+    return;
+  }
+
+  if (block.type === "assign") {
+    validateAssign(block, declared, errorsById, errors);
+    errorsById.set(block.id, errors);
+    return;
+  }
+
+  if (block.type === "if") {
+    validateIf(block, declared, errorsById, errors);
+    errorsById.set(block.id, errors);
+    return;
+  }
+
+  errors.push(`Неизвестный тип блока-инструкции: ${block.type}`);
   errorsById.set(block.id, errors);
 }
 
@@ -78,8 +174,9 @@ export function validateProgram(program) {
   const errorsById = new Map();
   const declared = new Set();
 
-  for (const block of program.children)
-    validateBlock(block, declared, errorsById);
+  for (const block of program.children) {
+    validateStatementBlock(block, declared, errorsById);
+  }
 
   return errorsById;
 }

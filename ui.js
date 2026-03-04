@@ -1,4 +1,4 @@
-import { makeArithmeticModel, program } from "./state.js";
+import { program } from "./state.js";
 import { validateProgram } from "./validate.js";
 import { runProgram } from "./engine.js";
 import { DnD } from "./dnd.js";
@@ -11,10 +11,32 @@ const dnd = new DnD(programDiv, touch);
 
 const domById = new Map();
 
+function walkBlock(block, visit) {
+  visit(block);
+
+  if (block.type === "assign" && block.children[0]) {
+    walkBlock(block.children[0], visit);
+  }
+
+  if (block.type === "arith") {
+    if (block.children[0]) walkBlock(block.children[0], visit);
+    if (block.children[1]) walkBlock(block.children[1], visit);
+  }
+
+  if (block.type === "if") {
+    if (block.conditionChildren[0]) walkBlock(block.conditionChildren[0], visit);
+    if (block.conditionChildren[1]) walkBlock(block.conditionChildren[1], visit);
+    for (const child of block.children) walkBlock(child, visit);
+  }
+}
+
+function walkProgram(visit) {
+  for (const block of program.children) walkBlock(block, visit);
+}
+
 export function makeOperandDom(operandModel, parent, operandType) {
   const element = document.createElement("div");
   element.className = "operandBlock";
-
   dnd.makeArithDropZone(element, parent, operandType);
 
   const valueInput = document.createElement("input");
@@ -22,22 +44,17 @@ export function makeOperandDom(operandModel, parent, operandType) {
   valueInput.placeholder = "0";
   valueInput.value = "";
 
-  //const variableSelect = document.createElement("select");
+  const childHost = document.createElement("div");
 
   valueInput.addEventListener("input", function () {
     operandModel.value = valueInput.value;
     touch();
   });
 
-  // variableSelect.addEventListener("change", function () {
-  //   operandModel.variable = variableSelect.value;
-  //   touch();
-  // });
-
   element.appendChild(valueInput);
-  //element.appendChild(variableSelect);
+  element.appendChild(childHost);
 
-  return { element, valueInput };
+  return { element, valueInput, childHost };
 }
 
 runBtn.addEventListener("click", function () {
@@ -51,14 +68,24 @@ runBtn.addEventListener("click", function () {
   });
 });
 
-function getDeclaredNames() {
-  const options = new Set();
-  for (const block of program.children)
-    if (block.type === "varDecl")
-      for (const name of parseNames(block.raw))
-        if (isValidVarName(name)) options.add(name);
+function collectDeclaredNames(container, names) {
+  for (const block of container.children) {
+    if (block.type === "varDecl") {
+      for (const name of parseNames(block.raw)) {
+        if (isValidVarName(name)) names.add(name);
+      }
+    }
 
-  return [...options];
+    if (block.type === "if") {
+      collectDeclaredNames(block, names);
+    }
+  }
+}
+
+function getDeclaredNames() {
+  const names = new Set();
+  collectDeclaredNames(program, names);
+  return [...names];
 }
 
 function updateSelectionOptions(select, preferredValue) {
@@ -87,68 +114,95 @@ function updateSelectionOptions(select, preferredValue) {
   return "";
 }
 
-function updateOperandVariableSelection(operandModel, operandUi) {
-  operandUi.variableSelect.value = operandModel.variable;
-  operandModel.variable = updateSelectionOptions(
-    operandUi.variableSelect,
-    operandModel.variable,
-  );
-}
-
 function validateAndStoreErrors() {
   const errorsById = validateProgram(program);
-  for (const block of program.children)
+  walkProgram((block) => {
     block.errors = errorsById.get(block.id) ?? [];
+  });
+}
+
+function syncDomOrder(container, desiredElements) {
+  let cursor = container.firstChild;
+  for (const blockEl of desiredElements) {
+    if (cursor === blockEl) {
+      cursor = cursor.nextSibling;
+    } else {
+      container.insertBefore(blockEl, cursor);
+    }
+  }
+}
+
+function renderOperand(operandModel, operandUi, childBlock) {
+  if (operandUi.valueInput.value !== operandModel.value) {
+    operandUi.valueInput.value = operandModel.value;
+  }
+
+  const currentChildElement = operandUi.childHost.firstElementChild;
+
+  if (childBlock) {
+    renderBlock(childBlock);
+    renderBlockContent(childBlock);
+    operandUi.valueInput.style.display = "none";
+
+    const expectedChildElement = domById.get(childBlock.id).block;
+    if (currentChildElement !== expectedChildElement) {
+      operandUi.childHost.innerHTML = "";
+      operandUi.childHost.appendChild(expectedChildElement);
+    }
+  } else {
+    operandUi.valueInput.style.display = "";
+    if (currentChildElement) {
+      operandUi.childHost.innerHTML = "";
+    }
+  }
+}
+
+function renderBlockContent(blockObj) {
+  const ui = domById.get(blockObj.id);
+
+  if (blockObj.type === "assign") {
+    renderOperand(blockObj.expression, ui.operandUi, blockObj.children[0]);
+    return;
+  }
+
+  if (blockObj.type === "arith") {
+    renderOperand(blockObj.left, ui.leftOperandUi, blockObj.children[0]);
+    renderOperand(blockObj.right, ui.rightOperandUi, blockObj.children[1]);
+    return;
+  }
+
+  if (blockObj.type === "if") {
+    renderOperand(
+      blockObj.left,
+      ui.leftOperandUi,
+      blockObj.conditionChildren[0],
+    );
+    renderOperand(
+      blockObj.right,
+      ui.rightOperandUi,
+      blockObj.conditionChildren[1],
+    );
+    syncStatementsOrder(blockObj, ui.thenCanvas);
+  }
+}
+
+function syncStatementsOrder(containerModel, containerElement) {
+  const desired = [];
+
+  for (const blockObj of containerModel.children) {
+    renderBlock(blockObj);
+    desired.push(domById.get(blockObj.id).block);
+  }
+
+  syncDomOrder(containerElement, desired);
+
+  for (const blockObj of containerModel.children) {
+    renderBlockContent(blockObj);
+  }
 }
 
 function render() {
-  for (const blockObj of program.children) {
-    renderBlock(blockObj);
-    for (const child of blockObj.children) renderBlock(child);
-  }
-  syncBlocksOrder(program, programDiv);
-}
-
-function syncBlocksOrder(blocks, blocksDiv) {
-  const desired = [];
-
-  for (const blockObj of blocks.children) {
-    const ui = domById.get(blockObj.id);
-    if (ui?.block) desired.push(ui.block);
-
-    if (blockObj.children.length != 0) {
-      if (blockObj.type === "assign") {
-        ui.operandElement.innerHTML = "";
-        syncBlocksOrder(blockObj, ui.operandElement);
-      } else if (blockObj.type === "arith") {
-        if (blockObj.children.length > 0) {
-          if (blockObj.children[0]) {
-            const leftChild = blockObj.children[0];
-            renderBlock(leftChild);
-            ui.leftOperandElement.innerHTML = "";
-            ui.leftOperandElement.appendChild(domById.get(leftChild.id).block);
-          }
-        }
-        if (blockObj.children.length > 1) {
-          if (blockObj.children[1]) {
-            const rightChild = blockObj.children[1];
-            renderBlock(rightChild);
-            ui.rightOperandElement.innerHTML = "";
-            ui.rightOperandElement.appendChild(
-              domById.get(rightChild.id).block,
-            );
-          }
-        }
-      }
-    }
-
-    let cursor = blocksDiv.firstChild;
-
-    for (const blockEl of desired) {
-      if (cursor === blockEl) cursor = cursor.nextSibling;
-      else blocksDiv.insertBefore(blockEl, cursor);
-    }
-  }
+  syncStatementsOrder(program, programDiv);
 }
 
 function touch() {
@@ -156,204 +210,219 @@ function touch() {
   render();
 }
 
+function makeDragStart(blockObj, blockEl) {
+  blockEl.addEventListener("dragstart", function (e) {
+    e.dataTransfer.setData("text/plain", `move:${blockObj.id}`);
+    e.dataTransfer.effectAllowed = "move";
+  });
+}
+
+function makeErrorBox() {
+  const errorBox = document.createElement("div");
+  errorBox.className = "errorBox";
+  return errorBox;
+}
+
 function ensureBlockDom(blockObj) {
   if (domById.has(blockObj.id)) return domById.get(blockObj.id);
 
-  switch (blockObj.type) {
-    case "varDecl": {
-      const block = document.createElement("div");
-      block.className = "blockSuccess";
-      block.draggable = true;
+  if (blockObj.type === "varDecl") {
+    const block = document.createElement("div");
+    block.className = "blockSuccess";
+    block.draggable = true;
 
-      const type = document.createElement("span");
-      type.textContent = "int ";
+    const type = document.createElement("span");
+    type.textContent = "int ";
 
-      const input = document.createElement("input");
-      input.type = "text";
-      input.placeholder = "a, b, c";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "a, b, c";
 
-      const errorBox = document.createElement("div");
-      errorBox.className = "errorBox";
+    const errorBox = makeErrorBox();
 
-      block.appendChild(type);
-      block.appendChild(input);
-      block.appendChild(errorBox);
+    block.appendChild(type);
+    block.appendChild(input);
+    block.appendChild(errorBox);
 
-      input.addEventListener("input", function () {
-        blockObj.raw = input.value;
-        touch();
-      });
+    input.addEventListener("input", function () {
+      blockObj.raw = input.value;
+      touch();
+    });
 
-      block.addEventListener("dragstart", function (e) {
-        e.dataTransfer.setData("text/plain", `move:${blockObj.id}`);
-        e.dataTransfer.effectAllowed = "move";
-      });
+    makeDragStart(blockObj, block);
 
-      const ui = { block, input, errorBox };
-      domById.set(blockObj.id, ui);
+    const ui = { block, input, errorBox };
+    domById.set(blockObj.id, ui);
+    return ui;
+  }
 
-      return ui;
-    }
-    case "assign": {
-      const block = document.createElement("div");
-      block.className = "blockSuccess";
-      block.draggable = true;
+  if (blockObj.type === "assign") {
+    const block = document.createElement("div");
+    block.className = "blockSuccess";
+    block.draggable = true;
 
-      const select = document.createElement("select");
+    const select = document.createElement("select");
+    const span = document.createElement("span");
+    span.textContent = " = ";
 
-      const span = document.createElement("span");
-      span.textContent = " = ";
+    const operandUi = makeOperandDom(blockObj.expression, blockObj, "expression");
+    const errorBox = makeErrorBox();
 
-      const operandUi = makeOperandDom(
-        blockObj.expression,
-        blockObj,
-        "expression",
-      );
+    block.appendChild(select);
+    block.appendChild(span);
+    block.appendChild(operandUi.element);
+    block.appendChild(errorBox);
 
-      const errorBox = document.createElement("div");
-      errorBox.className = "errorBox";
+    select.addEventListener("change", function () {
+      blockObj.variable = select.value;
+      touch();
+    });
 
-      block.appendChild(select);
-      block.appendChild(span);
-      block.appendChild(operandUi.element);
-      block.appendChild(errorBox);
+    makeDragStart(blockObj, block);
 
-      select.addEventListener("change", function () {
-        blockObj.variable = select.value;
-        touch();
-      });
+    const ui = { block, errorBox, select, operandUi };
+    domById.set(blockObj.id, ui);
+    return ui;
+  }
 
-      block.addEventListener("dragstart", function (e) {
-        e.dataTransfer.setData("text/plain", `move:${blockObj.id}`);
-        e.dataTransfer.effectAllowed = "move";
-      });
+  if (blockObj.type === "arith") {
+    const block = document.createElement("div");
+    block.className = "blockSuccess";
+    block.draggable = true;
 
-      const ui = {
-        block,
-        errorBox,
-        select,
-        operandElement: operandUi.element,
-        operandUi,
-      };
-      domById.set(blockObj.id, ui);
-      return ui;
-    }
-    case "arith": {
-      const block = document.createElement("div");
-      block.className = "blockSuccess";
-      block.draggable = true;
+    const leftOperandUi = makeOperandDom(blockObj.left, blockObj, "left");
 
-      const exprMode = document.createElement("select");
-      exprMode.className = "exprMode";
-      exprMode.innerHTML = `
-      <option value="single">value</option>
-      <option value="binary">binary</option>`;
-
-      const leftOperandUi = makeOperandDom(blockObj.left, blockObj, "left");
-      const operator = document.createElement("select");
-      operator.className = "exprOperator";
-      operator.innerHTML = `
+    const operator = document.createElement("select");
+    operator.className = "exprOperator";
+    operator.innerHTML = `
       <option value="+">+</option>
       <option value="-">-</option>
       <option value="*">*</option>
       <option value="/">/</option>
       <option value="%">%</option>`;
 
-      const rightOperandUi = makeOperandDom(blockObj.right, blockObj, "right");
+    const rightOperandUi = makeOperandDom(blockObj.right, blockObj, "right");
+    const errorBox = makeErrorBox();
 
-      const errorBox = document.createElement("div");
-      errorBox.className = "errorBox";
+    block.appendChild(leftOperandUi.element);
+    block.appendChild(operator);
+    block.appendChild(rightOperandUi.element);
+    block.appendChild(errorBox);
 
-      block.appendChild(leftOperandUi.element);
-      block.appendChild(operator);
-      block.appendChild(rightOperandUi.element);
-      block.appendChild(errorBox);
+    operator.addEventListener("change", function () {
+      blockObj.operator = operator.value;
+      touch();
+    });
 
-      operator.addEventListener("change", function () {
-        blockObj.operator = operator.value;
-        touch();
-      });
+    makeDragStart(blockObj, block);
 
-      block.addEventListener("dragstart", function (e) {
-        e.dataTransfer.setData("text/plain", `move:${blockObj.id}`);
-        e.dataTransfer.effectAllowed = "move";
-      });
-
-      const ui = {
-        block,
-        errorBox,
-        exprMode,
-        operator,
-        leftOperandElement: leftOperandUi.element,
-        rightOperandElement: rightOperandUi.element,
-        leftOperandUi,
-        rightOperandUi,
-      };
-      domById.set(blockObj.id, ui);
-      return ui;
-    }
-    case "varGet": {
-      const block = document.createElement("div");
-      block.className = "blockSuccess";
-      block.draggable = true;
-
-      const select = document.createElement("select");
-
-      const errorBox = document.createElement("div");
-      errorBox.className = "errorBox";
-
-      block.appendChild(select);
-      block.appendChild(errorBox);
-
-      select.addEventListener("change", function () {
-        blockObj.variable = select.value;
-        touch();
-      });
-
-      block.addEventListener("dragstart", function (e) {
-        e.dataTransfer.setData("text/plain", `move:${blockObj.id}`);
-        e.dataTransfer.effectAllowed = "move";
-      });
-
-      const ui = { block, select, errorBox };
-      domById.set(blockObj.id, ui);
-      return ui;
-    }
+    const ui = { block, errorBox, operator, leftOperandUi, rightOperandUi };
+    domById.set(blockObj.id, ui);
+    return ui;
   }
 
-  throw new Error("Неизвестный тип блока " + blockObj.type);
-}
+  if (blockObj.type === "varGet") {
+    const block = document.createElement("div");
+    block.className = "blockSuccess";
+    block.draggable = true;
 
-function renderOperand(operandModel, operandUi) {
-  if (operandUi.valueInput.value !== operandModel.value) {
-    operandUi.valueInput.value = operandModel.value;
+    const select = document.createElement("select");
+    const errorBox = makeErrorBox();
+
+    block.appendChild(select);
+    block.appendChild(errorBox);
+
+    select.addEventListener("change", function () {
+      blockObj.variable = select.value;
+      touch();
+    });
+
+    makeDragStart(blockObj, block);
+
+    const ui = { block, select, errorBox };
+    domById.set(blockObj.id, ui);
+    return ui;
   }
-  //operandUi.variableSelect.value = operandModel.variable;
 
-  //updateOperandVariableSelection(operandModel, operandUi);
+  if (blockObj.type === "if") {
+    const block = document.createElement("div");
+    block.className = "blockSuccess";
+    block.draggable = true;
+
+    const header = document.createElement("div");
+    header.className = "ifHeader";
+
+    const ifLabel = document.createElement("span");
+    ifLabel.textContent = "if";
+
+    const leftOperandUi = makeOperandDom(blockObj.left, blockObj, "condLeft");
+
+    const comparator = document.createElement("select");
+    comparator.className = "exprOperator";
+    comparator.innerHTML = `
+      <option value=">">&gt;</option>
+      <option value="<">&lt;</option>
+      <option value="==">==</option>
+      <option value="!=">!=</option>
+      <option value=">=">&gt;=</option>
+      <option value="<=">&lt;=</option>`;
+
+    const rightOperandUi = makeOperandDom(blockObj.right, blockObj, "condRight");
+
+    const thenLabel = document.createElement("span");
+    thenLabel.textContent = "then";
+
+    header.appendChild(ifLabel);
+    header.appendChild(leftOperandUi.element);
+    header.appendChild(comparator);
+    header.appendChild(rightOperandUi.element);
+    header.appendChild(thenLabel);
+
+    const thenCanvas = document.createElement("div");
+    thenCanvas.className = "ifBodyCanvas";
+    dnd.makeDropZone(thenCanvas, blockObj);
+
+    const errorBox = makeErrorBox();
+
+    block.appendChild(header);
+    block.appendChild(thenCanvas);
+    block.appendChild(errorBox);
+
+    comparator.addEventListener("change", function () {
+      blockObj.comparator = comparator.value;
+      touch();
+    });
+
+    makeDragStart(blockObj, block);
+
+    const ui = {
+      block,
+      errorBox,
+      comparator,
+      leftOperandUi,
+      rightOperandUi,
+      thenCanvas,
+    };
+    domById.set(blockObj.id, ui);
+    return ui;
+  }
+
+  throw new Error("Unknown block type " + blockObj.type);
 }
 
 function renderBlock(blockObj) {
   const ui = ensureBlockDom(blockObj);
 
-  switch (blockObj.type) {
-    case "varDecl": {
-      ui.input.value = blockObj.raw;
-      break;
-    }
-    case "assign": {
-      blockObj.variable = updateSelectionOptions(ui.select, blockObj.variable);
-      break;
-    }
-    case "arith": {
-      renderOperand(blockObj.left, ui.leftOperandUi);
-      renderOperand(blockObj.right, ui.rightOperandUi);
-      break;
-    }
-    case "varGet": {
-      blockObj.variable = updateSelectionOptions(ui.select, blockObj.variable);
-      break;
-    }
+  if (blockObj.type === "varDecl") {
+    ui.input.value = blockObj.raw;
+  } else if (blockObj.type === "assign") {
+    blockObj.variable = updateSelectionOptions(ui.select, blockObj.variable);
+  } else if (blockObj.type === "arith") {
+    ui.operator.value = blockObj.operator;
+  } else if (blockObj.type === "varGet") {
+    blockObj.variable = updateSelectionOptions(ui.select, blockObj.variable);
+  } else if (blockObj.type === "if") {
+    ui.comparator.value = blockObj.comparator;
   }
 
   if (blockObj.errors.length > 0) {
@@ -381,7 +450,7 @@ function appendLogs(text) {
 
 export function initUI() {
   dnd.init();
-  dnd.makeDropZone(programDiv);
+  dnd.makeDropZone(programDiv, program);
   validateAndStoreErrors();
   render();
 }

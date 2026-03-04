@@ -142,6 +142,15 @@ input {
   background-color: #ffffff;
 }
 
+select {
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid #c6c6c6;
+  border-radius: 6px;
+  background-color: #ffffff;
+}
+
 .exprMode,
 .exprOperator {
   width: 95px;
@@ -165,4 +174,34 @@ input {
 
 .operandBlock input {
   width: 76px;
+}
+
+.ifHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ifBodyCanvas {
+  margin-top: 10px;
+  min-height: 80px;
+  border: 1px dashed #9ca3af;
+  border-radius: 6px;
+  padding: 8px;
+  background: #ffffff;
+}
+
+.ifBodyCanvas::before {
+  content: "drop statements here";
+  display: block;
+  color: #888;
+  font-style: italic;
+  text-align: center;
+  padding: 10px;
+  pointer-events: none;
+}
+
+.ifBodyCanvas:not(:empty)::before {
+  content: none;
 }

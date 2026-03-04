@@ -1,11 +1,12 @@
 import {
   program,
   putBlock,
-  moveBlockById,
+  moveStatementBlock,
   makeArithmeticModel,
   makeVarGetModel,
-  insertChildIntoParent,
   moveBlockToParent,
+  insertChildIntoParent,
+  isStatementBlockType,
 } from "./state.js";
 
 export class DnD {
@@ -14,8 +15,8 @@ export class DnD {
     this.touch = touch;
   }
 
-  getDropIndex(mouseY) {
-    const elements = Array.from(this.programDiv.children);
+  getDropIndex(zone, mouseY) {
+    const elements = Array.from(zone.children);
 
     for (let i = 0; i < elements.length; i++) {
       const rect = elements[i].getBoundingClientRect();
@@ -42,15 +43,19 @@ export class DnD {
     });
   }
 
-  makeDropZone(zone) {
+  makeDropZone(zone, place = program) {
     zone.addEventListener("dragover", (e) => {
       e.preventDefault();
 
       const data = e.dataTransfer.getData("text/plain");
+      if (!data) return;
 
-      if (data && data.startsWith("add:")) e.dataTransfer.dropEffect = "copy";
-      else if (data && data.startsWith("move:"))
+      if (data.startsWith("add:")) {
+        const blockType = data.split(":")[1];
+        if (isStatementBlockType(blockType)) e.dataTransfer.dropEffect = "copy";
+      } else if (data.startsWith("move:")) {
         e.dataTransfer.dropEffect = "move";
+      }
     });
 
     zone.addEventListener("drop", (e) => {
@@ -62,19 +67,38 @@ export class DnD {
 
       if (data.startsWith("add:")) {
         const blockType = data.split(":")[1];
-        let addIndex = this.getDropIndex(e.clientY);
-        putBlock(program, blockType, addIndex);
+        if (!isStatementBlockType(blockType)) return;
+
+        const addIndex = this.getDropIndex(zone, e.clientY);
+        putBlock(place, blockType, addIndex);
         this.touch();
       } else if (data.startsWith("move:")) {
         const blockId = parseInt(data.split(":")[1], 10);
-        let newIndex = this.getDropIndex(e.clientY);
-        moveBlockById(blockId, newIndex);
+        const newIndex = this.getDropIndex(zone, e.clientY);
+        moveStatementBlock(blockId, place, newIndex);
         this.touch();
       }
     });
   }
 
+  makeExpressionDragOver(zone, e) {
+    e.preventDefault();
+
+    const data = e.dataTransfer.getData("text/plain");
+    if (!data) return;
+
+    if (data.startsWith("add:")) {
+      const blockType = data.split(":")[1];
+      if (blockType === "arith" || blockType === "varGet")
+        e.dataTransfer.dropEffect = "copy";
+    } else if (data.startsWith("move:")) {
+      e.dataTransfer.dropEffect = "move";
+    }
+  }
+
   makeArithDropZone(zone, parent, operandType) {
+    zone.addEventListener("dragover", (e) => this.makeExpressionDragOver(zone, e));
+
     zone.addEventListener("drop", (e) => {
       e.preventDefault();
       e.stopPropagation();

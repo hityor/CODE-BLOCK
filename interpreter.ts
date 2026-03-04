@@ -7,7 +7,7 @@ interface Literal extends Expression {
 
 class IntegerLiteral implements Literal {
   constructor(public value: number) {
-    this.value = Math.floor(value);
+    this.value = Math.trunc(value);
   }
 }
 
@@ -255,7 +255,7 @@ class Executer {
     [TokenCode.ADD]: (a, b) => a + b,
     [TokenCode.SUBTR]: (a, b) => a - b,
     [TokenCode.MULT]: (a, b) => a * b,
-    [TokenCode.DIV]: (a, b) => a / b,
+    [TokenCode.DIV]: (a, b) => Math.trunc(a / b),
     [TokenCode.MOD]: (a, b) => a % b,
 
     [TokenCode.EQUAL]: (a, b) => a === b,
@@ -329,7 +329,7 @@ class Executer {
         }
         case TokenCode.ASSIGN_VAR: {
           const varName = instr.arg;
-          const value = Math.floor(this.valueStack.pop());
+          const value = Math.trunc(this.valueStack.pop());
           this.memoryStorage.set(varName, value);
           if (this.output != console.log)
             this.output(
