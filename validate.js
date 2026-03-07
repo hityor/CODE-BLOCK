@@ -3,10 +3,10 @@ import { parseNames, isValidVarName } from "./utils.js";
 const COMPARE_OPERATORS = new Set([">", "<", "==", "!=", ">=", "<="]);
 const ARITH_OPERATORS = new Set(["+", "-", "*", "/", "%"]);
 
-function validateIntegerOperand(operand, errors, operandSide) {
-  const n = Number(operand.value);
+function validateIntegerOperand(operandModel, errors, operandSide) {
+  const n = Number(operandModel.value);
 
-  if (operand.value === "") {
+  if (operandModel.value === "") {
     errors.push(`${operandSide}: пустой операнд`);
     return;
   }
@@ -36,62 +36,64 @@ function validateOperand(
   }
 }
 
-function validateExpressionBlock(block, declared, errorsById) {
+function validateExpressionBlock(blockModel, declared, errorsById) {
   const errors = [];
 
-  if (block.type === "varGet") {
-    if (!block.variable) {
+  if (blockModel.type === "varGet") {
+    if (!blockModel.variable) {
       errors.push("Переменная не выбрана");
-    } else if (!declared.has(block.variable)) {
-      errors.push(`Переменная не объявлена: ${block.variable}`);
+    } else if (!declared.has(blockModel.variable)) {
+      errors.push(`Переменная не объявлена: ${blockModel.variable}`);
     }
 
-    errorsById.set(block.id, errors);
+    errorsById.set(blockModel.id, errors);
     return;
   }
 
-  if (block.type === "arith") {
+  if (blockModel.type === "arith") {
     validateOperand(
-      block.children[0],
-      block.left,
+      blockModel.children[0],
+      blockModel.left,
       declared,
       errorsById,
       errors,
       "Левый",
     );
     validateOperand(
-      block.children[1],
-      block.right,
+      blockModel.children[1],
+      blockModel.right,
       declared,
       errorsById,
       errors,
       "Правый",
     );
 
-    if (!ARITH_OPERATORS.has(block.operator)) {
-      errors.push(`Неизвестный арифметический оператор: ${block.operator}`);
+    if (!ARITH_OPERATORS.has(blockModel.operator)) {
+      errors.push(
+        `Неизвестный арифметический оператор: ${blockModel.operator}`,
+      );
     }
 
     if (
-      (block.operator === "/" || block.operator === "%") &&
-      !block.children[1]
+      (blockModel.operator === "/" || blockModel.operator === "%") &&
+      !blockModel.children[1]
     ) {
-      const rightValue = Number(block.right.value);
+      const rightValue = Number(blockModel.right.value);
       if (!Number.isNaN(rightValue) && rightValue === 0) {
         errors.push("Деление на ноль");
       }
     }
 
-    errorsById.set(block.id, errors);
+    errorsById.set(blockModel.id, errors);
     return;
   }
 
-  errors.push(`Блок "${block.type}" нельзя использовать как выражение`);
-  errorsById.set(block.id, errors);
+  errors.push(`Блок "${blockModel.type}" нельзя использовать как выражение`);
+  errorsById.set(blockModel.id, errors);
 }
 
-function validateVarDecl(block, declared, errors) {
-  const names = parseNames(block.raw);
+function validateVarDecl(blockModel, declared, errors) {
+  const names = parseNames(blockModel.raw);
   if (names.length === 0) errors.push("Объявление переменной пустое");
 
   const localDeclared = new Set();
@@ -106,85 +108,88 @@ function validateVarDecl(block, declared, errors) {
       localDeclared.add(name);
     }
   }
-  
+
   for (const name of localDeclared) {
     declared.add(name);
   }
-  
 }
 
-function validateAssign(block, declared, errorsById, errors) {
-  if (!block.variable) {
+function validateAssign(blockModel, declared, errorsById, errors) {
+  if (!blockModel.variable) {
     errors.push("Переменная для присваивания не выбрана");
-  } else if (!declared.has(block.variable)) {
-    errors.push(`Переменная не объявлена: ${block.variable}`);
+  } else if (!declared.has(blockModel.variable)) {
+    errors.push(`Переменная не объявлена: ${blockModel.variable}`);
   }
 
-  if (block.children[0]) {
-    validateExpressionBlock(block.children[0], declared, errorsById);
+  if (blockModel.children[0]) {
+    validateExpressionBlock(blockModel.children[0], declared, errorsById);
   } else {
-    validateIntegerOperand(block.expression, errors, "Присваиваемое значение");
+    validateIntegerOperand(
+      blockModel.expression,
+      errors,
+      "Присваиваемое значение",
+    );
   }
 }
 
-function validateIf(block, declared, errorsById, errors) {
-  if (!COMPARE_OPERATORS.has(block.comparator)) {
-    errors.push(`Неизвестный оператор сравнения: ${block.comparator}`);
+function validateIf(blockModel, declared, errorsById, errors) {
+  if (!COMPARE_OPERATORS.has(blockModel.comparator)) {
+    errors.push(`Неизвестный оператор сравнения: ${blockModel.comparator}`);
   }
 
   validateOperand(
-    block.conditionChildren[0],
-    block.left,
+    blockModel.conditionChildren[0],
+    blockModel.left,
     declared,
     errorsById,
     errors,
     "Левая часть условия",
   );
   validateOperand(
-    block.conditionChildren[1],
-    block.right,
+    blockModel.conditionChildren[1],
+    blockModel.right,
     declared,
     errorsById,
     errors,
     "Правая часть условия",
   );
 
-  for (const child of block.children) {
+  for (const child of blockModel.children) {
     validateStatementBlock(child, declared, errorsById);
   }
 }
 
-function validateStatementBlock(block, declared, errorsById) {
+function validateStatementBlock(blockModel, declared, errorsById) {
   const errors = [];
 
-  if (block.type === "varDecl") {
-    validateVarDecl(block, declared, errors);
-    errorsById.set(block.id, errors);
+  if (blockModel.type === "varDecl") {
+    validateVarDecl(blockModel, declared, errors);
+    errorsById.set(blockModel.id, errors);
     return;
   }
 
-  if (block.type === "assign") {
-    validateAssign(block, declared, errorsById, errors);
-    errorsById.set(block.id, errors);
+  if (blockModel.type === "assign") {
+    validateAssign(blockModel, declared, errorsById, errors);
+    errorsById.set(blockModel.id, errors);
     return;
   }
 
-  if (block.type === "if") {
-    validateIf(block, declared, errorsById, errors);
-    errorsById.set(block.id, errors);
+  if (blockModel.type === "if") {
+    validateIf(blockModel, declared, errorsById, errors);
+    errorsById.set(blockModel.id, errors);
     return;
   }
 
-  errors.push(`Неизвестный тип блока: ${block.type}`);
-  errorsById.set(block.id, errors);
+  errors.push(`Неизвестный тип блока: ${blockModel.type}`);
+  errorsById.set(blockModel.id, errors);
 }
 
 export function validateProgram(program) {
   const errorsById = new Map();
   const declared = new Set();
 
-  for (const block of program.children) {
-    validateStatementBlock(block, declared, errorsById);
+  for (const blockModel of program.children) {
+    validateStatementBlock(blockModel, declared, errorsById);
   }
 
   return errorsById;

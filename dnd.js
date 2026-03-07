@@ -10,8 +10,8 @@ import {
 } from "./state.js";
 
 export class DnD {
-  constructor(programDiv, validateAndRender) {
-    this.programDiv = programDiv;
+  constructor(programCanvasEl, validateAndRender) {
+    this.programCanvasEl = programCanvasEl;
     this.validateAndRender = validateAndRender;
   }
 
