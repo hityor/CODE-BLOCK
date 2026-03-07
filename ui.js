@@ -238,214 +238,230 @@ function makeErrorBox() {
   return errorBox;
 }
 
+function makeVarDeclView(blockModel) {
+  const blockEl = document.createElement("div");
+  blockEl.className = "blockSuccess";
+  blockEl.draggable = true;
+
+  const typeEl = document.createElement("span");
+  typeEl.textContent = "int ";
+
+  const inputEl = document.createElement("input");
+  inputEl.type = "text";
+  inputEl.placeholder = "a, b, c";
+
+  const errorBoxEl = makeErrorBox();
+
+  blockEl.appendChild(typeEl);
+  blockEl.appendChild(inputEl);
+  blockEl.appendChild(errorBoxEl);
+
+  inputEl.addEventListener("input", function () {
+    blockModel.raw = inputEl.value;
+    validateAndRender();
+  });
+
+  makeDragStart(blockModel, blockEl);
+
+  const blockView = { blockEl, inputEl, errorBoxEl };
+  viewById.set(blockModel.id, blockView);
+  return blockView;
+}
+
+function makeAssignView(blockModel) {
+  const blockEl = document.createElement("div");
+  blockEl.className = "blockSuccess";
+  blockEl.draggable = true;
+
+  const selectEl = document.createElement("select");
+  const spanEl = document.createElement("span");
+  spanEl.textContent = " = ";
+
+  const operandView = makeOperandView(
+    blockModel.expression,
+    blockModel,
+    "expression",
+  );
+  const errorBoxEl = makeErrorBox();
+
+  blockEl.appendChild(selectEl);
+  blockEl.appendChild(spanEl);
+  blockEl.appendChild(operandView.rootEl);
+  blockEl.appendChild(errorBoxEl);
+
+  selectEl.addEventListener("change", function () {
+    blockModel.variable = selectEl.value;
+    validateAndRender();
+  });
+
+  makeDragStart(blockModel, blockEl);
+
+  const blockView = { blockEl, errorBoxEl, selectEl, operandView };
+  viewById.set(blockModel.id, blockView);
+  return blockView;
+}
+
+function makeArithmeticView(blockModel) {
+  const blockEl = document.createElement("div");
+  blockEl.className = "blockSuccess";
+  blockEl.draggable = true;
+
+  const leftOperandView = makeOperandView(blockModel.left, blockModel, "left");
+
+  const operatorEl = document.createElement("select");
+  operatorEl.className = "exprOperator";
+  operatorEl.innerHTML = `
+    <option value="+">+</option>
+    <option value="-">-</option>
+    <option value="*">*</option>
+    <option value="/">/</option>
+    <option value="%">%</option>`;
+
+  const rightOperandView = makeOperandView(
+    blockModel.right,
+    blockModel,
+    "right",
+  );
+  const errorBoxEl = makeErrorBox();
+
+  blockEl.appendChild(leftOperandView.rootEl);
+  blockEl.appendChild(operatorEl);
+  blockEl.appendChild(rightOperandView.rootEl);
+  blockEl.appendChild(errorBoxEl);
+
+  operatorEl.addEventListener("change", function () {
+    blockModel.operator = operatorEl.value;
+    validateAndRender();
+  });
+
+  makeDragStart(blockModel, blockEl);
+
+  const blockView = {
+    blockEl,
+    errorBoxEl,
+    operatorEl,
+    leftOperandView,
+    rightOperandView,
+  };
+  viewById.set(blockModel.id, blockView);
+  return blockView;
+}
+
+function makeVarGetView(blockModel) {
+  const blockEl = document.createElement("div");
+  blockEl.className = "blockSuccess";
+  blockEl.draggable = true;
+
+  const selectEl = document.createElement("select");
+  const errorBoxEl = makeErrorBox();
+
+  blockEl.appendChild(selectEl);
+  blockEl.appendChild(errorBoxEl);
+
+  selectEl.addEventListener("change", function () {
+    blockModel.variable = selectEl.value;
+    validateAndRender();
+  });
+
+  makeDragStart(blockModel, blockEl);
+
+  const blockView = { blockEl, selectEl, errorBoxEl };
+  viewById.set(blockModel.id, blockView);
+  return blockView;
+}
+
+function makeIfView(blockModel) {
+  const blockEl = document.createElement("div");
+  blockEl.className = "blockSuccess";
+  blockEl.draggable = true;
+
+  const headerEl = document.createElement("div");
+  headerEl.className = "ifHeader";
+
+  const ifLabelEl = document.createElement("span");
+  ifLabelEl.textContent = "if";
+
+  const leftOperandView = makeOperandView(
+    blockModel.left,
+    blockModel,
+    "condLeft",
+  );
+
+  const comparatorEl = document.createElement("select");
+  comparatorEl.className = "exprOperator";
+  comparatorEl.innerHTML = `
+    <option value=">">&gt;</option>
+    <option value="<">&lt;</option>
+    <option value="==">==</option>
+    <option value="!=">!=</option>
+    <option value=">=">&gt;=</option>
+    <option value="<=">&lt;=</option>`;
+
+  const rightOperandView = makeOperandView(
+    blockModel.right,
+    blockModel,
+    "condRight",
+  );
+
+  const thenLabelEl = document.createElement("span");
+  thenLabelEl.textContent = "then";
+
+  headerEl.appendChild(ifLabelEl);
+  headerEl.appendChild(leftOperandView.rootEl);
+  headerEl.appendChild(comparatorEl);
+  headerEl.appendChild(rightOperandView.rootEl);
+  headerEl.appendChild(thenLabelEl);
+
+  const thenCanvasEl = document.createElement("div");
+  thenCanvasEl.className = "ifBodyCanvas";
+  dnd.makeDropZone(thenCanvasEl, blockModel);
+
+  const errorBoxEl = makeErrorBox();
+
+  blockEl.appendChild(headerEl);
+  blockEl.appendChild(thenCanvasEl);
+  blockEl.appendChild(errorBoxEl);
+
+  comparatorEl.addEventListener("change", function () {
+    blockModel.comparator = comparatorEl.value;
+    validateAndRender();
+  });
+
+  makeDragStart(blockModel, blockEl);
+
+  const blockView = {
+    blockEl,
+    errorBoxEl,
+    comparatorEl,
+    leftOperandView,
+    rightOperandView,
+    thenCanvasEl,
+  };
+  viewById.set(blockModel.id, blockView);
+  return blockView;
+}
+
 function ensureBlockView(blockModel) {
   if (viewById.has(blockModel.id)) return viewById.get(blockModel.id);
 
   if (blockModel.type === "varDecl") {
-    const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
-    blockEl.draggable = true;
-
-    const typeEl = document.createElement("span");
-    typeEl.textContent = "int ";
-
-    const inputEl = document.createElement("input");
-    inputEl.type = "text";
-    inputEl.placeholder = "a, b, c";
-
-    const errorBoxEl = makeErrorBox();
-
-    blockEl.appendChild(typeEl);
-    blockEl.appendChild(inputEl);
-    blockEl.appendChild(errorBoxEl);
-
-    inputEl.addEventListener("input", function () {
-      blockModel.raw = inputEl.value;
-      validateAndRender();
-    });
-
-    makeDragStart(blockModel, blockEl);
-
-    const blockView = { blockEl, inputEl, errorBoxEl };
-    viewById.set(blockModel.id, blockView);
-    return blockView;
+    return makeVarDeclView(blockModel);
   }
 
   if (blockModel.type === "assign") {
-    const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
-    blockEl.draggable = true;
-
-    const selectEl = document.createElement("select");
-    const spanEl = document.createElement("span");
-    spanEl.textContent = " = ";
-
-    const operandView = makeOperandView(
-      blockModel.expression,
-      blockModel,
-      "expression",
-    );
-    const errorBoxEl = makeErrorBox();
-
-    blockEl.appendChild(selectEl);
-    blockEl.appendChild(spanEl);
-    blockEl.appendChild(operandView.rootEl);
-    blockEl.appendChild(errorBoxEl);
-
-    selectEl.addEventListener("change", function () {
-      blockModel.variable = selectEl.value;
-      validateAndRender();
-    });
-
-    makeDragStart(blockModel, blockEl);
-
-    const blockView = { blockEl, errorBoxEl, selectEl, operandView };
-    viewById.set(blockModel.id, blockView);
-    return blockView;
+    return makeAssignView(blockModel);
   }
 
   if (blockModel.type === "arith") {
-    const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
-    blockEl.draggable = true;
-
-    const leftOperandView = makeOperandView(
-      blockModel.left,
-      blockModel,
-      "left",
-    );
-
-    const operatorEl = document.createElement("select");
-    operatorEl.className = "exprOperator";
-    operatorEl.innerHTML = `
-      <option value="+">+</option>
-      <option value="-">-</option>
-      <option value="*">*</option>
-      <option value="/">/</option>
-      <option value="%">%</option>`;
-
-    const rightOperandView = makeOperandView(
-      blockModel.right,
-      blockModel,
-      "right",
-    );
-    const errorBoxEl = makeErrorBox();
-
-    blockEl.appendChild(leftOperandView.rootEl);
-    blockEl.appendChild(operatorEl);
-    blockEl.appendChild(rightOperandView.rootEl);
-    blockEl.appendChild(errorBoxEl);
-
-    operatorEl.addEventListener("change", function () {
-      blockModel.operator = operatorEl.value;
-      validateAndRender();
-    });
-
-    makeDragStart(blockModel, blockEl);
-
-    const blockView = {
-      blockEl,
-      errorBoxEl,
-      operatorEl,
-      leftOperandView,
-      rightOperandView,
-    };
-    viewById.set(blockModel.id, blockView);
-    return blockView;
+    return makeArithmeticView(blockModel);
   }
 
   if (blockModel.type === "varGet") {
-    const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
-    blockEl.draggable = true;
-
-    const selectEl = document.createElement("select");
-    const errorBoxEl = makeErrorBox();
-
-    blockEl.appendChild(selectEl);
-    blockEl.appendChild(errorBoxEl);
-
-    selectEl.addEventListener("change", function () {
-      blockModel.variable = selectEl.value;
-      validateAndRender();
-    });
-
-    makeDragStart(blockModel, blockEl);
-
-    const blockView = { blockEl, selectEl, errorBoxEl };
-    viewById.set(blockModel.id, blockView);
-    return blockView;
+    return makeVarGetView(blockModel);
   }
 
   if (blockModel.type === "if") {
-    const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
-    blockEl.draggable = true;
-
-    const headerEl = document.createElement("div");
-    headerEl.className = "ifHeader";
-
-    const ifLabelEl = document.createElement("span");
-    ifLabelEl.textContent = "if";
-
-    const leftOperandView = makeOperandView(
-      blockModel.left,
-      blockModel,
-      "condLeft",
-    );
-
-    const comparatorEl = document.createElement("select");
-    comparatorEl.className = "exprOperator";
-    comparatorEl.innerHTML = `
-      <option value=">">&gt;</option>
-      <option value="<">&lt;</option>
-      <option value="==">==</option>
-      <option value="!=">!=</option>
-      <option value=">=">&gt;=</option>
-      <option value="<=">&lt;=</option>`;
-
-    const rightOperandView = makeOperandView(
-      blockModel.right,
-      blockModel,
-      "condRight",
-    );
-
-    const thenLabelEl = document.createElement("span");
-    thenLabelEl.textContent = "then";
-
-    headerEl.appendChild(ifLabelEl);
-    headerEl.appendChild(leftOperandView.rootEl);
-    headerEl.appendChild(comparatorEl);
-    headerEl.appendChild(rightOperandView.rootEl);
-    headerEl.appendChild(thenLabelEl);
-
-    const thenCanvasEl = document.createElement("div");
-    thenCanvasEl.className = "ifBodyCanvas";
-    dnd.makeDropZone(thenCanvasEl, blockModel);
-
-    const errorBoxEl = makeErrorBox();
-
-    blockEl.appendChild(headerEl);
-    blockEl.appendChild(thenCanvasEl);
-    blockEl.appendChild(errorBoxEl);
-
-    comparatorEl.addEventListener("change", function () {
-      blockModel.comparator = comparatorEl.value;
-      validateAndRender();
-    });
-
-    makeDragStart(blockModel, blockEl);
-
-    const blockView = {
-      blockEl,
-      errorBoxEl,
-      comparatorEl,
-      leftOperandView,
-      rightOperandView,
-      thenCanvasEl,
-    };
-    viewById.set(blockModel.id, blockView);
-    return blockView;
+    return makeIfView(blockModel);
   }
 
   throw new Error("Unknown block type " + blockModel.type);
