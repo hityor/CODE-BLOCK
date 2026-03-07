@@ -107,14 +107,14 @@ function hasDescendant(node, targetId) {
   return false;
 }
 
-export function putBlock(place, blockType, addIndex) {
+export function putBlock(parentBlock, blockType, addIndex) {
   if (!isStatementBlockType(blockType)) return;
 
   const block = createBlockByType(blockType);
   if (!block) return;
 
-  const index = normalizeIndex(addIndex, place.children.length);
-  place.children.splice(index, 0, block);
+  const index = normalizeIndex(addIndex, parentBlock.children.length);
+  parentBlock.children.splice(index, 0, block);
 }
 
 function canInsertExpressionIntoParent(parentBlock, operandType) {

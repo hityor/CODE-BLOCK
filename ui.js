@@ -39,7 +39,7 @@ function walkProgramTree(visit) {
 export function makeOperandView(operandModel, parentBlockModel, operandType) {
   const rootEl = document.createElement("div");
   rootEl.className = "operandBlock";
-  dnd.makeArithDropZone(rootEl, parentBlockModel, operandType);
+  dnd.makeExpressionDropZone(rootEl, parentBlockModel, operandType);
 
   const literalInputEl = document.createElement("input");
   literalInputEl.type = "text";
@@ -226,6 +226,7 @@ function validateAndRender() {
 
 function makeDragStart(blockModel, blockEl) {
   blockEl.addEventListener("dragstart", function (e) {
+    e.stopPropagation();
     e.dataTransfer.setData("text/plain", `move:${blockModel.id}`);
     e.dataTransfer.effectAllowed = "move";
   });

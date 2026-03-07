@@ -96,7 +96,7 @@ export class DnD {
     }
   }
 
-  makeArithDropZone(zone, parent, operandType) {
+  makeExpressionDropZone(zone, parent, operandType) {
     zone.addEventListener("dragover", (e) => this.makeExpressionDragOver(e));
 
     zone.addEventListener("drop", (e) => {
