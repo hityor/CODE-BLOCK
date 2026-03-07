@@ -81,7 +81,7 @@ export class DnD {
     });
   }
 
-  makeExpressionDragOver(zone, e) {
+  makeExpressionDragOver(e) {
     e.preventDefault();
 
     const data = e.dataTransfer.getData("text/plain");
@@ -97,7 +97,7 @@ export class DnD {
   }
 
   makeArithDropZone(zone, parent, operandType) {
-    zone.addEventListener("dragover", (e) => this.makeExpressionDragOver(zone, e));
+    zone.addEventListener("dragover", (e) => this.makeExpressionDragOver(e));
 
     zone.addEventListener("drop", (e) => {
       e.preventDefault();

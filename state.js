@@ -117,19 +117,6 @@ export function putBlock(place, blockType, addIndex) {
   place.children.splice(index, 0, block);
 }
 
-export function moveBlockById(blockId, newIndex) {
-  const oldIndex = program.children.findIndex((b) => b.id === blockId);
-  if (oldIndex === -1) return;
-
-  newIndex = normalizeIndex(newIndex, program.children.length);
-
-  if (newIndex === oldIndex) return;
-
-  const [blockModel] = program.children.splice(oldIndex, 1);
-  if (newIndex > oldIndex) newIndex--;
-  program.children.splice(newIndex, 0, blockModel);
-}
-
 function canInsertExpressionIntoParent(parentBlock, operandType) {
   return (
     (operandType === "expression" && parentBlock.type === "assign") ||
@@ -199,57 +186,54 @@ function removeFromParent(parent, block) {
 }
 
 export function moveStatementBlock(blockId, newParent, newIndex) {
-  const location = findBlockById(blockId, program);
+  const location = findBlockWithParentById(blockId, program);
   if (!location) return;
 
-  const { block, parent } = location;
-  if (!isStatementBlockType(block.type)) return;
-  if (!Array.isArray(newParent.children)) return;
-  if (block.id === newParent.id) return;
-  if (hasDescendant(block, newParent.id)) return;
+  const { blockModel, parentBlockModel } = location;
+  if (!isStatementBlockType(blockModel.type)) return;
+  if (blockModel.id === newParent.id) return;
+  if (hasDescendant(blockModel, newParent.id)) return;
 
-  if (!Array.isArray(parent.children)) return;
-
-  const oldIndex = parent.children.indexOf(block);
+  const oldIndex = parentBlockModel.children.indexOf(blockModel);
   if (oldIndex === -1) return;
 
   let targetIndex = normalizeIndex(newIndex, newParent.children.length);
 
-  parent.children.splice(oldIndex, 1);
-  if (parent === newParent && targetIndex > oldIndex) targetIndex--;
-  newParent.children.splice(targetIndex, 0, block);
+  parentBlockModel.children.splice(oldIndex, 1);
+  if (parentBlockModel === newParent && targetIndex > oldIndex) targetIndex--;
+  newParent.children.splice(targetIndex, 0, blockModel);
 }
 
 export function moveBlockToParent(blockId, newParent, operandType) {
-  const location = findBlockById(blockId, program);
+  const location = findBlockWithParentById(blockId, program);
   if (!location) return;
 
-  const { block, parent } = location;
-  if (!isExpressionBlockType(block.type)) return;
-  if (block.id === newParent.id) return;
-  if (hasDescendant(block, newParent.id)) return;
+  const { blockModel, parentBlockModel } = location;
+  if (!isExpressionBlockType(blockModel.type)) return;
+  if (blockModel.id === newParent.id) return;
+  if (hasDescendant(blockModel, newParent.id)) return;
   if (!canInsertExpressionIntoParent(newParent, operandType)) return;
 
   if (
-    (operandType === "expression" && parent?.children?.[0] === block) ||
-    (operandType === "left" && parent?.children?.[0] === block) ||
-    (operandType === "right" && parent?.children?.[1] === block) ||
-    (operandType === "condLeft" && parent?.conditionChildren?.[0] === block) ||
-    (operandType === "condRight" && parent?.conditionChildren?.[1] === block)
+    (operandType === "expression" && parentBlockModel?.children?.[0] === blockModel) ||
+    (operandType === "left" && parentBlockModel?.children?.[0] === blockModel) ||
+    (operandType === "right" && parentBlockModel?.children?.[1] === blockModel) ||
+    (operandType === "condLeft" && parentBlockModel?.conditionChildren?.[0] === blockModel) ||
+    (operandType === "condRight" && parentBlockModel?.conditionChildren?.[1] === blockModel)
   ) {
     return;
   }
 
-  removeFromParent(parent, block);
-  insertChildIntoParent(newParent, block, operandType);
+  removeFromParent(parentBlockModel, blockModel);
+  insertChildIntoParent(newParent, blockModel, operandType);
 }
 
-function findBlockById(id, node, parent = null) {
-  if (node.id === id) return { block: node, parent };
+function findBlockWithParentById(targetBlockId, currentBlockModel, parentBlockModel = null) {
+  if (currentBlockModel.id === targetBlockId) return { blockModel: currentBlockModel, parentBlockModel };
 
-  for (const child of getAllChildren(node)) {
-    const result = findBlockById(id, child, node);
-    if (result) return result;
+  for (const childBlockModel of getAllChildren(currentBlockModel)) {
+    const found = findBlockWithParentById(targetBlockId, childBlockModel, currentBlockModel);
+    if (found) return found;
   }
 
   return null;
