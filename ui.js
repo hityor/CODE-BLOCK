@@ -11,24 +11,35 @@ const dnd = new DnD(programCanvasEl, validateAndRender);
 
 const viewById = new Map();
 
-function walkBlockTree(blockModel, visit) {
-  visit(blockModel);
+function getChildBlocks(blockModel) {
+  const children = [];
 
-  if (blockModel.type === "assign" && blockModel.children[0]) {
-    walkBlockTree(blockModel.children[0], visit);
+  if (blockModel.type === "assign") {
+    if (blockModel.children[0]) children.push(blockModel.children[0]);
   }
 
   if (blockModel.type === "arith") {
-    if (blockModel.children[0]) walkBlockTree(blockModel.children[0], visit);
-    if (blockModel.children[1]) walkBlockTree(blockModel.children[1], visit);
+    if (blockModel.children[0]) children.push(blockModel.children[0]);
+    if (blockModel.children[1]) children.push(blockModel.children[1]);
   }
 
   if (blockModel.type === "if") {
     if (blockModel.conditionChildren[0])
-      walkBlockTree(blockModel.conditionChildren[0], visit);
+      children.push(blockModel.conditionChildren[0]);
     if (blockModel.conditionChildren[1])
-      walkBlockTree(blockModel.conditionChildren[1], visit);
-    for (const child of blockModel.children) walkBlockTree(child, visit);
+      children.push(blockModel.conditionChildren[1]);
+
+    for (const child of blockModel.children) children.push(child);
+  }
+
+  return children;
+}
+
+function walkBlockTree(blockModel, visit) {
+  visit(blockModel);
+
+  for (const child of getChildBlocks(blockModel)) {
+    walkBlockTree(child, visit);
   }
 }
 
