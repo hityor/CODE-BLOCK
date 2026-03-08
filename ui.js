@@ -32,6 +32,15 @@ function getChildBlocks(blockModel) {
     for (const child of blockModel.children) children.push(child);
   }
 
+  if (blockModel.type === "while") {
+    if (blockModel.conditionChildren[0])
+      children.push(blockModel.conditionChildren[0]);
+    if (blockModel.conditionChildren[1])
+      children.push(blockModel.conditionChildren[1]);
+
+    for (const child of blockModel.children) children.push(child);
+  }
+
   return children;
 }
 
@@ -89,7 +98,7 @@ function collectDeclaredNames(containerModel, declaredNames) {
       }
     }
 
-    if (blockModel.type === "if") {
+    if (blockModel.type === "if" || blockModel.type === "while") {
       collectDeclaredNames(blockModel, declaredNames);
     }
   }
@@ -208,6 +217,20 @@ function renderBlockBody(blockModel) {
       blockModel.conditionChildren[1],
     );
     renderStatementList(blockModel, blockView.thenCanvasEl);
+  }
+
+  if (blockModel.type === "while") {
+    renderOperandView(
+      blockModel.left,
+      blockView.leftOperandView,
+      blockModel.conditionChildren[0],
+    );
+    renderOperandView(
+      blockModel.right,
+      blockView.rightOperandView,
+      blockModel.conditionChildren[1],
+    );
+    renderStatementList(blockModel, blockView.bodyCanvasEl);
   }
 }
 
@@ -387,7 +410,7 @@ function makeIfView(blockModel) {
   blockEl.draggable = true;
 
   const headerEl = document.createElement("div");
-  headerEl.className = "ifHeader";
+  headerEl.className = "whileIfHeader";
 
   const ifLabelEl = document.createElement("span");
   ifLabelEl.textContent = "if";
@@ -424,7 +447,7 @@ function makeIfView(blockModel) {
   headerEl.appendChild(thenLabelEl);
 
   const thenCanvasEl = document.createElement("div");
-  thenCanvasEl.className = "ifBodyCanvas";
+  thenCanvasEl.className = "whileIfBodyCanvas";
   dnd.makeDropZone(thenCanvasEl, blockModel);
 
   const errorBoxEl = makeErrorBox();
@@ -447,6 +470,77 @@ function makeIfView(blockModel) {
     leftOperandView,
     rightOperandView,
     thenCanvasEl,
+  };
+  viewById.set(blockModel.id, blockView);
+  return blockView;
+}
+
+function makeWhileView(blockModel) {
+  const blockEl = document.createElement("div");
+  blockEl.className = "blockSuccess";
+  blockEl.draggable = true;
+
+  const headerEl = document.createElement("div");
+  headerEl.className = "whileIfHeader";
+
+  const whileLabelEl = document.createElement("span");
+  whileLabelEl.textContent = "while";
+
+  const leftOperandView = makeOperandView(
+    blockModel.left,
+    blockModel,
+    "condLeft",
+  );
+
+  const comparatorEl = document.createElement("select");
+  comparatorEl.className = "exprOperator";
+  comparatorEl.innerHTML = `
+    <option value=">">&gt;</option>
+    <option value="<">&lt;</option>
+    <option value="==">==</option>
+    <option value="!=">!=</option>
+    <option value=">=">&gt;=</option>
+    <option value="<=">&lt;=</option>`;
+
+  const rightOperandView = makeOperandView(
+    blockModel.right,
+    blockModel,
+    "condRight",
+  );
+
+  const doLabelEl = document.createElement("span");
+  doLabelEl.textContent = "do";
+
+  headerEl.appendChild(whileLabelEl);
+  headerEl.appendChild(leftOperandView.rootEl);
+  headerEl.appendChild(comparatorEl);
+  headerEl.appendChild(rightOperandView.rootEl);
+  headerEl.appendChild(doLabelEl);
+
+  const bodyCanvasEl = document.createElement("div");
+  bodyCanvasEl.className = "whileIfBodyCanvas";
+  dnd.makeDropZone(bodyCanvasEl, blockModel);
+
+  const errorBoxEl = makeErrorBox();
+
+  blockEl.appendChild(headerEl);
+  blockEl.appendChild(bodyCanvasEl);
+  blockEl.appendChild(errorBoxEl);
+
+  comparatorEl.addEventListener("change", function () {
+    blockModel.comparator = comparatorEl.value;
+    validateAndRender();
+  });
+
+  makeDragStart(blockModel, blockEl);
+
+  const blockView = {
+    blockEl,
+    errorBoxEl,
+    comparatorEl,
+    leftOperandView,
+    rightOperandView,
+    bodyCanvasEl,
   };
   viewById.set(blockModel.id, blockView);
   return blockView;
@@ -475,6 +569,10 @@ function ensureBlockView(blockModel) {
     return makeIfView(blockModel);
   }
 
+  if (blockModel.type === "while") {
+    return makeWhileView(blockModel);
+  }
+
   throw new Error("Unknown block type " + blockModel.type);
 }
 
@@ -496,6 +594,8 @@ function renderBlockShell(blockModel) {
       blockModel.variable,
     );
   } else if (blockModel.type === "if") {
+    blockView.comparatorEl.value = blockModel.comparator;
+  } else if (blockModel.type === "while") {
     blockView.comparatorEl.value = blockModel.comparator;
   }
 

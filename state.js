@@ -55,8 +55,26 @@ function makeIfModel() {
   };
 }
 
+function makeWhileModel() {
+  return {
+    id: nextId++,
+    type: "while",
+    comparator: ">",
+    left: makeOperandModel(),
+    right: makeOperandModel(),
+    conditionChildren: [null, null],
+    children: [],
+    errors: [],
+  };
+}
+
 export function isStatementBlockType(blockType) {
-  return blockType === "varDecl" || blockType === "assign" || blockType === "if";
+  return (
+    blockType === "varDecl" ||
+    blockType === "assign" ||
+    blockType === "if" ||
+    blockType === "while"
+  );
 }
 
 export function isExpressionBlockType(blockType) {
@@ -75,6 +93,8 @@ function createBlockByType(blockType) {
       return makeVarGetModel();
     case "if":
       return makeIfModel();
+    case "while":
+      return makeWhileModel();
     default:
       return null;
   }
@@ -123,7 +143,9 @@ function canInsertExpressionIntoParent(parentBlock, operandType) {
     (operandType === "left" && parentBlock.type === "arith") ||
     (operandType === "right" && parentBlock.type === "arith") ||
     (operandType === "condLeft" && parentBlock.type === "if") ||
-    (operandType === "condRight" && parentBlock.type === "if")
+    (operandType === "condRight" && parentBlock.type === "if") ||
+    (operandType === "condLeft" && parentBlock.type === "while") ||
+    (operandType === "condRight" && parentBlock.type === "while")
   );
 }
 
@@ -215,11 +237,16 @@ export function moveBlockToParent(blockId, newParent, operandType) {
   if (!canInsertExpressionIntoParent(newParent, operandType)) return;
 
   if (
-    (operandType === "expression" && parentBlockModel?.children?.[0] === blockModel) ||
-    (operandType === "left" && parentBlockModel?.children?.[0] === blockModel) ||
-    (operandType === "right" && parentBlockModel?.children?.[1] === blockModel) ||
-    (operandType === "condLeft" && parentBlockModel?.conditionChildren?.[0] === blockModel) ||
-    (operandType === "condRight" && parentBlockModel?.conditionChildren?.[1] === blockModel)
+    (operandType === "expression" &&
+      parentBlockModel?.children?.[0] === blockModel) ||
+    (operandType === "left" &&
+      parentBlockModel?.children?.[0] === blockModel) ||
+    (operandType === "right" &&
+      parentBlockModel?.children?.[1] === blockModel) ||
+    (operandType === "condLeft" &&
+      parentBlockModel?.conditionChildren?.[0] === blockModel) ||
+    (operandType === "condRight" &&
+      parentBlockModel?.conditionChildren?.[1] === blockModel)
   ) {
     return;
   }
@@ -228,11 +255,20 @@ export function moveBlockToParent(blockId, newParent, operandType) {
   insertChildIntoParent(newParent, blockModel, operandType);
 }
 
-function findBlockWithParentById(targetBlockId, currentBlockModel, parentBlockModel = null) {
-  if (currentBlockModel.id === targetBlockId) return { blockModel: currentBlockModel, parentBlockModel };
+function findBlockWithParentById(
+  targetBlockId,
+  currentBlockModel,
+  parentBlockModel = null,
+) {
+  if (currentBlockModel.id === targetBlockId)
+    return { blockModel: currentBlockModel, parentBlockModel };
 
   for (const childBlockModel of getAllChildren(currentBlockModel)) {
-    const found = findBlockWithParentById(targetBlockId, childBlockModel, currentBlockModel);
+    const found = findBlockWithParentById(
+      targetBlockId,
+      childBlockModel,
+      currentBlockModel,
+    );
     if (found) return found;
   }
 

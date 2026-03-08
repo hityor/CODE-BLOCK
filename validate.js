@@ -159,6 +159,33 @@ function validateIf(blockModel, declared, errorsById, errors) {
   }
 }
 
+function validateWhile(blockModel, declared, errorsById, errors) {
+  if (!COMPARE_OPERATORS.has(blockModel.comparator)) {
+    errors.push(`Неизвестный оператор сравнения: ${blockModel.comparator}`);
+  }
+
+  validateOperand(
+    blockModel.conditionChildren[0],
+    blockModel.left,
+    declared,
+    errorsById,
+    errors,
+    "Левая часть условия",
+  );
+  validateOperand(
+    blockModel.conditionChildren[1],
+    blockModel.right,
+    declared,
+    errorsById,
+    errors,
+    "Правая часть условия",
+  );
+
+  for (const child of blockModel.children) {
+    validateStatementBlock(child, declared, errorsById);
+  }
+}
+
 function validateStatementBlock(blockModel, declared, errorsById) {
   const errors = [];
 
@@ -176,6 +203,12 @@ function validateStatementBlock(blockModel, declared, errorsById) {
 
   if (blockModel.type === "if") {
     validateIf(blockModel, declared, errorsById, errors);
+    errorsById.set(blockModel.id, errors);
+    return;
+  }
+
+  if (blockModel.type === "while") {
+    validateWhile(blockModel, declared, errorsById, errors);
     errorsById.set(blockModel.id, errors);
     return;
   }

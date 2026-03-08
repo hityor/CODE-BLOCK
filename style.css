@@ -176,14 +176,14 @@ select {
   width: 76px;
 }
 
-.ifHeader {
+.whileIfHeader {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.ifBodyCanvas {
+.whileIfBodyCanvas {
   margin-top: 10px;
   min-height: 80px;
   border: 1px dashed #9ca3af;
@@ -192,7 +192,7 @@ select {
   background: #ffffff;
 }
 
-.ifBodyCanvas::before {
+.whileIfBodyCanvas::before {
   content: "drop statements here";
   display: block;
   color: #888;
@@ -202,6 +202,6 @@ select {
   pointer-events: none;
 }
 
-.ifBodyCanvas:not(:empty)::before {
+.whileIfBodyCanvas:not(:empty)::before {
   content: none;
 }

@@ -55,6 +55,15 @@ function buildStatements(blocks, parseNames) {
       statements.push(new IfStatement(condition, body));
       continue;
     }
+
+    if (block.type === "while") {
+      const left = expressionFromTarget(block.conditionChildren[0], block.left);
+      const right = expressionFromTarget(block.conditionChildren[1], block.right);
+      const condition = new CompareExpr(block.comparator, left, right);
+      const body = new BlockStatement(buildStatements(block.children, parseNames));
+      statements.push(new WhileStatement(condition, body));
+      continue;
+    }
   }
 
   return statements;
@@ -72,7 +81,7 @@ function hasAnyErrorsInBlock(block) {
     if (block.children[1] && hasAnyErrorsInBlock(block.children[1])) return true;
   }
 
-  if (block.type === "if") {
+  if (block.type === "if" || block.type === "while") {
     if (
       block.conditionChildren[0] &&
       hasAnyErrorsInBlock(block.conditionChildren[0])
