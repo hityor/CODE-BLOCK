@@ -42,25 +42,44 @@ function buildStatements(blocks, parseNames) {
     }
 
     if (block.type === "assign") {
-      const expression = expressionFromTarget(block.children[0], block.expression);
+      const expression = expressionFromTarget(
+        block.children[0],
+        block.expression,
+      );
       statements.push(new AssignStatement(block.variable, expression));
       continue;
     }
 
     if (block.type === "if") {
       const left = expressionFromTarget(block.conditionChildren[0], block.left);
-      const right = expressionFromTarget(block.conditionChildren[1], block.right);
+      const right = expressionFromTarget(
+        block.conditionChildren[1],
+        block.right,
+      );
       const condition = new CompareExpr(block.comparator, left, right);
-      const body = new BlockStatement(buildStatements(block.children, parseNames));
-      statements.push(new IfStatement(condition, body));
+      const thenBody = new BlockStatement(
+        buildStatements(block.children, parseNames),
+      );
+
+      const elseBody =
+        block.elseChildren.length > 0
+          ? new BlockStatement(buildStatements(block.elseChildren, parseNames))
+          : undefined;
+
+      statements.push(new IfStatement(condition, thenBody, elseBody));
       continue;
     }
 
     if (block.type === "while") {
       const left = expressionFromTarget(block.conditionChildren[0], block.left);
-      const right = expressionFromTarget(block.conditionChildren[1], block.right);
+      const right = expressionFromTarget(
+        block.conditionChildren[1],
+        block.right,
+      );
       const condition = new CompareExpr(block.comparator, left, right);
-      const body = new BlockStatement(buildStatements(block.children, parseNames));
+      const body = new BlockStatement(
+        buildStatements(block.children, parseNames),
+      );
       statements.push(new WhileStatement(condition, body));
       continue;
     }
@@ -77,11 +96,32 @@ function hasAnyErrorsInBlock(block) {
   }
 
   if (block.type === "arith") {
-    if (block.children[0] && hasAnyErrorsInBlock(block.children[0])) return true;
-    if (block.children[1] && hasAnyErrorsInBlock(block.children[1])) return true;
+    if (block.children[0] && hasAnyErrorsInBlock(block.children[0]))
+      return true;
+    if (block.children[1] && hasAnyErrorsInBlock(block.children[1]))
+      return true;
   }
 
-  if (block.type === "if" || block.type === "while") {
+  if (block.type === "if") {
+    if (
+      block.conditionChildren[0] &&
+      hasAnyErrorsInBlock(block.conditionChildren[0])
+    )
+      return true;
+    if (
+      block.conditionChildren[1] &&
+      hasAnyErrorsInBlock(block.conditionChildren[1])
+    )
+      return true;
+    for (const child of block.children) {
+      if (hasAnyErrorsInBlock(child)) return true;
+    }
+    for (const child of block.elseChildren) {
+      if (hasAnyErrorsInBlock(child)) return true;
+    }
+  }
+
+  if (block.type === "while") {
     if (
       block.conditionChildren[0] &&
       hasAnyErrorsInBlock(block.conditionChildren[0])

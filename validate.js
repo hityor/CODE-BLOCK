@@ -157,6 +157,10 @@ function validateIf(blockModel, declared, errorsById, errors) {
   for (const child of blockModel.children) {
     validateStatementBlock(child, declared, errorsById);
   }
+
+  for (const child of blockModel.elseChildren) {
+    validateStatementBlock(child, declared, errorsById);
+  }
 }
 
 function validateWhile(blockModel, declared, errorsById, errors) {

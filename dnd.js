@@ -1,12 +1,14 @@
 import {
   program,
   putBlock,
+  putElseBlock,
   moveStatementBlock,
   makeArithmeticModel,
   makeVarGetModel,
   moveBlockToParent,
   insertChildIntoParent,
   isStatementBlockType,
+  moveStatementBlockToElse,
 } from "./state.js";
 
 export class DnD {
@@ -76,6 +78,44 @@ export class DnD {
         const blockId = parseInt(data.split(":")[1], 10);
         const newIndex = this.getDropIndex(zone, e.clientY);
         moveStatementBlock(blockId, place, newIndex);
+        this.validateAndRender();
+      }
+    });
+  }
+
+  makeElseDropZone(zone, place = program) {
+    zone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+
+      const data = e.dataTransfer.getData("text/plain");
+      if (!data) return;
+
+      if (data.startsWith("add:")) {
+        const blockType = data.split(":")[1];
+        if (isStatementBlockType(blockType)) e.dataTransfer.dropEffect = "copy";
+      } else if (data.startsWith("move:")) {
+        e.dataTransfer.dropEffect = "move";
+      }
+    });
+
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const data = e.dataTransfer.getData("text/plain");
+      if (!data) return;
+
+      if (data.startsWith("add:")) {
+        const blockType = data.split(":")[1];
+        if (!isStatementBlockType(blockType)) return;
+
+        const addIndex = this.getDropIndex(zone, e.clientY);
+        putElseBlock(place, blockType, addIndex);
+        this.validateAndRender();
+      } else if (data.startsWith("move:")) {
+        const blockId = parseInt(data.split(":")[1], 10);
+        const newIndex = this.getDropIndex(zone, e.clientY);
+        moveStatementBlockToElse(blockId, place, newIndex);
         this.validateAndRender();
       }
     });

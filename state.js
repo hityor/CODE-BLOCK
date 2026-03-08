@@ -51,6 +51,7 @@ function makeIfModel() {
     right: makeOperandModel(),
     conditionChildren: [null, null],
     children: [],
+    elseChildren: [],
     errors: [],
   };
 }
@@ -115,6 +116,10 @@ function getAllChildren(node) {
     for (const child of node.conditionChildren) if (child) children.push(child);
   }
 
+  if (Array.isArray(node.elseChildren)) {
+    for (const child of node.elseChildren) if (child) children.push(child);
+  }
+
   return children;
 }
 
@@ -135,6 +140,16 @@ export function putBlock(parentBlock, blockType, addIndex) {
 
   const index = normalizeIndex(addIndex, parentBlock.children.length);
   parentBlock.children.splice(index, 0, block);
+}
+
+export function putElseBlock(parentBlock, blockType, addIndex) {
+  if (!isStatementBlockType(blockType)) return;
+
+  const block = createBlockByType(blockType);
+  if (!block) return;
+
+  const index = normalizeIndex(addIndex, parentBlock.elseChildren.length);
+  parentBlock.elseChildren.splice(index, 0, block);
 }
 
 function canInsertExpressionIntoParent(parentBlock, operandType) {
@@ -192,6 +207,14 @@ function removeFromParent(parent, block) {
     }
   }
 
+  if (Array.isArray(parent.elseChildren)) {
+    const idx = parent.elseChildren.indexOf(block);
+    if (idx !== -1) {
+      parent.elseChildren.splice(idx, 1);
+      return true;
+    }
+  }
+
   if (Array.isArray(parent.conditionChildren)) {
     if (parent.conditionChildren[0] === block) {
       parent.conditionChildren[0] = null;
@@ -216,14 +239,53 @@ export function moveStatementBlock(blockId, newParent, newIndex) {
   if (blockModel.id === newParent.id) return;
   if (hasDescendant(blockModel, newParent.id)) return;
 
-  const oldIndex = parentBlockModel.children.indexOf(blockModel);
-  if (oldIndex === -1) return;
+  let oldIndex;
+  if (
+    Array.isArray(parentBlockModel.elseChildren) &&
+    parentBlockModel.elseChildren.indexOf(blockModel) !== -1
+  ) {
+    oldIndex = parentBlockModel.elseChildren.indexOf(blockModel);
+    parentBlockModel.elseChildren.splice(oldIndex, 1);
+  } else if (parentBlockModel.children.indexOf(blockModel) !== -1) {
+    oldIndex = parentBlockModel.children.indexOf(blockModel);
+    parentBlockModel.children.splice(oldIndex, 1);
+  } else {
+    return;
+  }
 
   let targetIndex = normalizeIndex(newIndex, newParent.children.length);
 
-  parentBlockModel.children.splice(oldIndex, 1);
   if (parentBlockModel === newParent && targetIndex > oldIndex) targetIndex--;
   newParent.children.splice(targetIndex, 0, blockModel);
+}
+
+export function moveStatementBlockToElse(blockId, newParent, newIndex) {
+  const location = findBlockWithParentById(blockId, program);
+  if (!location) return;
+
+  const { blockModel, parentBlockModel } = location;
+  if (!isStatementBlockType(blockModel.type)) return;
+  if (blockModel.id === newParent.id) return;
+  if (hasDescendant(blockModel, newParent.id)) return;
+
+  let oldIndex;
+  if (
+    Array.isArray(parentBlockModel.elseChildren) &&
+    parentBlockModel.elseChildren.indexOf(blockModel) !== -1
+  ) {
+    oldIndex = parentBlockModel.elseChildren.indexOf(blockModel);
+    parentBlockModel.elseChildren.splice(oldIndex, 1);
+  } else if (parentBlockModel.children.indexOf(blockModel) !== -1) {
+    oldIndex = parentBlockModel.children.indexOf(blockModel);
+    parentBlockModel.children.splice(oldIndex, 1);
+  } else {
+    return;
+  }
+
+  let targetIndex = normalizeIndex(newIndex, newParent.elseChildren.length);
+
+  if (parentBlockModel === newParent && targetIndex > oldIndex) targetIndex--;
+  newParent.elseChildren.splice(targetIndex, 0, blockModel);
 }
 
 export function moveBlockToParent(blockId, newParent, operandType) {

@@ -30,6 +30,7 @@ function getChildBlocks(blockModel) {
       children.push(blockModel.conditionChildren[1]);
 
     for (const child of blockModel.children) children.push(child);
+    for (const child of blockModel.elseChildren) children.push(child);
   }
 
   if (blockModel.type === "while") {
@@ -100,6 +101,20 @@ function collectDeclaredNames(containerModel, declaredNames) {
 
     if (blockModel.type === "if" || blockModel.type === "while") {
       collectDeclaredNames(blockModel, declaredNames);
+    }
+  }
+
+  if (Array.isArray(containerModel.elseChildren)) {
+    for (const blockModel of containerModel.elseChildren) {
+      if (blockModel.type === "varDecl") {
+        for (const name of parseNames(blockModel.raw)) {
+          if (isValidVarName(name)) declaredNames.add(name);
+        }
+      }
+
+      if (blockModel.type === "if" || blockModel.type === "while") {
+        collectDeclaredNames(blockModel, declaredNames);
+      }
     }
   }
 }
@@ -216,7 +231,8 @@ function renderBlockBody(blockModel) {
       blockView.rightOperandView,
       blockModel.conditionChildren[1],
     );
-    renderStatementList(blockModel, blockView.thenCanvasEl);
+    renderCustomStatementList(blockModel.children, blockView.thenCanvasEl);
+    renderCustomStatementList(blockModel.elseChildren, blockView.elseCanvasEl);
   }
 
   if (blockModel.type === "while") {
@@ -245,6 +261,21 @@ function renderStatementList(containerModel, listEl) {
   reorderChildren(listEl, desired);
 
   for (const blockModel of containerModel.children) {
+    renderBlockBody(blockModel);
+  }
+}
+
+function renderCustomStatementList(blocksContainer, listEl) {
+  const desired = [];
+
+  for (const blockModel of blocksContainer) {
+    renderBlockShell(blockModel);
+    desired.push(viewById.get(blockModel.id).blockEl);
+  }
+
+  reorderChildren(listEl, desired);
+
+  for (const blockModel of blocksContainer) {
     renderBlockBody(blockModel);
   }
 }
@@ -450,10 +481,19 @@ function makeIfView(blockModel) {
   thenCanvasEl.className = "whileIfBodyCanvas";
   dnd.makeDropZone(thenCanvasEl, blockModel);
 
+  const elseLabelEl = document.createElement("div");
+  elseLabelEl.textContent = "else";
+
+  const elseCanvasEl = document.createElement("div");
+  elseCanvasEl.className = "whileIfBodyCanvas";
+  dnd.makeElseDropZone(elseCanvasEl, blockModel);
+
   const errorBoxEl = makeErrorBox();
 
   blockEl.appendChild(headerEl);
   blockEl.appendChild(thenCanvasEl);
+  blockEl.appendChild(elseLabelEl);
+  blockEl.appendChild(elseCanvasEl);
   blockEl.appendChild(errorBoxEl);
 
   comparatorEl.addEventListener("change", function () {
@@ -470,6 +510,7 @@ function makeIfView(blockModel) {
     leftOperandView,
     rightOperandView,
     thenCanvasEl,
+    elseCanvasEl,
   };
   viewById.set(blockModel.id, blockView);
   return blockView;
