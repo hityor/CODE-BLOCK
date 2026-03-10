@@ -23,21 +23,20 @@ function getChildBlocks(blockModel) {
     if (blockModel.children[1]) children.push(blockModel.children[1]);
   }
 
+  if (blockModel.type === "compare") {
+    if (blockModel.children[0]) children.push(blockModel.children[0]);
+    if (blockModel.children[1]) children.push(blockModel.children[1]);
+  }
+
   if (blockModel.type === "if") {
-    if (blockModel.conditionChildren[0])
-      children.push(blockModel.conditionChildren[0]);
-    if (blockModel.conditionChildren[1])
-      children.push(blockModel.conditionChildren[1]);
+    if (blockModel.conditionChild) children.push(blockModel.conditionChild);
 
     for (const child of blockModel.children) children.push(child);
     for (const child of blockModel.elseChildren) children.push(child);
   }
 
   if (blockModel.type === "while") {
-    if (blockModel.conditionChildren[0])
-      children.push(blockModel.conditionChildren[0]);
-    if (blockModel.conditionChildren[1])
-      children.push(blockModel.conditionChildren[1]);
+    if (blockModel.conditionChild) children.push(blockModel.conditionChild);
 
     for (const child of blockModel.children) children.push(child);
   }
@@ -220,33 +219,61 @@ function renderBlockBody(blockModel) {
     return;
   }
 
-  if (blockModel.type === "if") {
+  if (blockModel.type === "compare") {
     renderOperandView(
       blockModel.left,
       blockView.leftOperandView,
-      blockModel.conditionChildren[0],
+      blockModel.children[0],
     );
     renderOperandView(
       blockModel.right,
       blockView.rightOperandView,
-      blockModel.conditionChildren[1],
+      blockModel.children[1],
     );
+    return;
+  }
+
+  if (blockModel.type === "if") {
+    const currentChildEl = blockView.conditionSlotEl.firstElementChild;
+
+    if (blockModel.conditionChild) {
+      renderBlockShell(blockModel.conditionChild);
+      renderBlockBody(blockModel.conditionChild);
+
+      const expectedChildEl = viewById.get(
+        blockModel.conditionChild.id,
+      ).blockEl;
+      if (currentChildEl !== expectedChildEl) {
+        blockView.conditionSlotEl.innerHTML = "";
+        blockView.conditionSlotEl.appendChild(expectedChildEl);
+      }
+    } else if (currentChildEl) {
+      blockView.conditionSlotEl.innerHTML = "";
+    }
+
     renderCustomStatementList(blockModel.children, blockView.thenCanvasEl);
     renderCustomStatementList(blockModel.elseChildren, blockView.elseCanvasEl);
   }
 
   if (blockModel.type === "while") {
-    renderOperandView(
-      blockModel.left,
-      blockView.leftOperandView,
-      blockModel.conditionChildren[0],
-    );
-    renderOperandView(
-      blockModel.right,
-      blockView.rightOperandView,
-      blockModel.conditionChildren[1],
-    );
-    renderStatementList(blockModel, blockView.bodyCanvasEl);
+    const currentChildEl = blockView.conditionSlotEl.firstElementChild;
+
+    if (blockModel.conditionChild) {
+      renderBlockShell(blockModel.conditionChild);
+      renderBlockBody(blockModel.conditionChild);
+
+      const expectedChildEl = viewById.get(
+        blockModel.conditionChild.id,
+      ).blockEl;
+      if (currentChildEl !== expectedChildEl) {
+        blockView.conditionSlotEl.innerHTML = "";
+        blockView.conditionSlotEl.appendChild(expectedChildEl);
+      }
+    } else if (currentChildEl) {
+      blockView.conditionSlotEl.innerHTML = "";
+    }
+
+    renderCustomStatementList(blockModel.children, blockView.bodyCanvasEl);
   }
 }
 
@@ -277,6 +304,36 @@ function renderCustomStatementList(blocksContainer, listEl) {
 
   for (const blockModel of blocksContainer) {
     renderBlockBody(blockModel);
+  }
+}
+
+function renderBlockShell(blockModel) {
+  const blockView = ensureBlockView(blockModel);
+
+  if (blockModel.type === "varDecl") {
+    blockView.inputEl.value = blockModel.raw;
+  } else if (blockModel.type === "assign") {
+    blockModel.variable = syncVariableOptions(
+      blockView.selectEl,
+      blockModel.variable,
+    );
+  } else if (blockModel.type === "arith") {
+    blockView.operatorEl.value = blockModel.operator;
+  } else if (blockModel.type === "varGet") {
+    blockModel.variable = syncVariableOptions(
+      blockView.selectEl,
+      blockModel.variable,
+    );
+  } else if (blockModel.type === "compare") {
+    blockView.operatorEl.value = blockModel.operator;
+  }
+
+  if (blockModel.errors.length > 0) {
+    blockView.errorBoxEl.textContent = blockModel.errors.join(", ");
+    blockView.blockEl.className = "blockError";
+  } else {
+    blockView.errorBoxEl.textContent = "";
+    blockView.blockEl.className = "blockSuccess";
   }
 }
 
@@ -435,6 +492,54 @@ function makeVarGetView(blockModel) {
   return blockView;
 }
 
+function makeCompareView(blockModel) {
+  const blockEl = document.createElement("div");
+  blockEl.classname = "blockSuccess";
+  blockEl.draggable = true;
+
+  const leftOperandView = makeOperandView(blockModel.left, blockModel, "left");
+
+  const operatorEl = document.createElement("select");
+  operatorEl.className = "exprOperator";
+  operatorEl.innerHTML = `
+    <option value=">">&gt;</option>
+    <option value="<">&lt;</option>
+    <option value="==">==</option>
+    <option value="!=">!=</option>
+    <option value=">=">&gt;=</option>
+    <option value="<=">&lt;=</option>`;
+
+  const rightOperandView = makeOperandView(
+    blockModel.right,
+    blockModel,
+    "right",
+  );
+  const errorBoxEl = makeErrorBox();
+
+  blockEl.appendChild(leftOperandView.rootEl);
+  blockEl.appendChild(operatorEl);
+  blockEl.appendChild(rightOperandView.rootEl);
+  blockEl.appendChild(errorBoxEl);
+
+  operatorEl.addEventListener("change", function () {
+    blockModel.operator = operatorEl.value;
+    validateAndRender();
+  });
+
+  makeDragStart(blockModel, blockEl);
+
+  const blockView = {
+    blockEl,
+    errorBoxEl,
+    operatorEl,
+    leftOperandView,
+    rightOperandView,
+  };
+
+  viewById.set(blockModel.id, blockView);
+  return blockView;
+}
+
 function makeIfView(blockModel) {
   const blockEl = document.createElement("div");
   blockEl.className = "blockSuccess";
@@ -446,35 +551,15 @@ function makeIfView(blockModel) {
   const ifLabelEl = document.createElement("span");
   ifLabelEl.textContent = "if";
 
-  const leftOperandView = makeOperandView(
-    blockModel.left,
-    blockModel,
-    "condLeft",
-  );
-
-  const comparatorEl = document.createElement("select");
-  comparatorEl.className = "exprOperator";
-  comparatorEl.innerHTML = `
-    <option value=">">&gt;</option>
-    <option value="<">&lt;</option>
-    <option value="==">==</option>
-    <option value="!=">!=</option>
-    <option value=">=">&gt;=</option>
-    <option value="<=">&lt;=</option>`;
-
-  const rightOperandView = makeOperandView(
-    blockModel.right,
-    blockModel,
-    "condRight",
-  );
+  const conditionSlotEl = document.createElement("div");
+  conditionSlotEl.className = "whileIfBodyCanvas";
+  dnd.makeConditionDropZone(conditionSlotEl, blockModel);
 
   const thenLabelEl = document.createElement("span");
   thenLabelEl.textContent = "then";
 
   headerEl.appendChild(ifLabelEl);
-  headerEl.appendChild(leftOperandView.rootEl);
-  headerEl.appendChild(comparatorEl);
-  headerEl.appendChild(rightOperandView.rootEl);
+  headerEl.appendChild(conditionSlotEl);
   headerEl.appendChild(thenLabelEl);
 
   const thenCanvasEl = document.createElement("div");
@@ -496,19 +581,12 @@ function makeIfView(blockModel) {
   blockEl.appendChild(elseCanvasEl);
   blockEl.appendChild(errorBoxEl);
 
-  comparatorEl.addEventListener("change", function () {
-    blockModel.comparator = comparatorEl.value;
-    validateAndRender();
-  });
-
   makeDragStart(blockModel, blockEl);
 
   const blockView = {
     blockEl,
     errorBoxEl,
-    comparatorEl,
-    leftOperandView,
-    rightOperandView,
+    conditionSlotEl,
     thenCanvasEl,
     elseCanvasEl,
   };
@@ -527,35 +605,15 @@ function makeWhileView(blockModel) {
   const whileLabelEl = document.createElement("span");
   whileLabelEl.textContent = "while";
 
-  const leftOperandView = makeOperandView(
-    blockModel.left,
-    blockModel,
-    "condLeft",
-  );
-
-  const comparatorEl = document.createElement("select");
-  comparatorEl.className = "exprOperator";
-  comparatorEl.innerHTML = `
-    <option value=">">&gt;</option>
-    <option value="<">&lt;</option>
-    <option value="==">==</option>
-    <option value="!=">!=</option>
-    <option value=">=">&gt;=</option>
-    <option value="<=">&lt;=</option>`;
-
-  const rightOperandView = makeOperandView(
-    blockModel.right,
-    blockModel,
-    "condRight",
-  );
+  const conditionSlotEl = document.createElement("div");
+  conditionSlotEl.className = "whileIfBodyCanvas";
+  dnd.makeConditionDropZone(conditionSlotEl, blockModel);
 
   const doLabelEl = document.createElement("span");
   doLabelEl.textContent = "do";
 
   headerEl.appendChild(whileLabelEl);
-  headerEl.appendChild(leftOperandView.rootEl);
-  headerEl.appendChild(comparatorEl);
-  headerEl.appendChild(rightOperandView.rootEl);
+  headerEl.appendChild(conditionSlotEl);
   headerEl.appendChild(doLabelEl);
 
   const bodyCanvasEl = document.createElement("div");
@@ -568,19 +626,12 @@ function makeWhileView(blockModel) {
   blockEl.appendChild(bodyCanvasEl);
   blockEl.appendChild(errorBoxEl);
 
-  comparatorEl.addEventListener("change", function () {
-    blockModel.comparator = comparatorEl.value;
-    validateAndRender();
-  });
-
   makeDragStart(blockModel, blockEl);
 
   const blockView = {
     blockEl,
     errorBoxEl,
-    comparatorEl,
-    leftOperandView,
-    rightOperandView,
+    conditionSlotEl,
     bodyCanvasEl,
   };
   viewById.set(blockModel.id, blockView);
@@ -606,6 +657,10 @@ function ensureBlockView(blockModel) {
     return makeVarGetView(blockModel);
   }
 
+  if (blockModel.type === "compare") {
+    return makeCompareView(blockModel);
+  }
+
   if (blockModel.type === "if") {
     return makeIfView(blockModel);
   }
@@ -615,38 +670,6 @@ function ensureBlockView(blockModel) {
   }
 
   throw new Error("Unknown block type " + blockModel.type);
-}
-
-function renderBlockShell(blockModel) {
-  const blockView = ensureBlockView(blockModel);
-
-  if (blockModel.type === "varDecl") {
-    blockView.inputEl.value = blockModel.raw;
-  } else if (blockModel.type === "assign") {
-    blockModel.variable = syncVariableOptions(
-      blockView.selectEl,
-      blockModel.variable,
-    );
-  } else if (blockModel.type === "arith") {
-    blockView.operatorEl.value = blockModel.operator;
-  } else if (blockModel.type === "varGet") {
-    blockModel.variable = syncVariableOptions(
-      blockView.selectEl,
-      blockModel.variable,
-    );
-  } else if (blockModel.type === "if") {
-    blockView.comparatorEl.value = blockModel.comparator;
-  } else if (blockModel.type === "while") {
-    blockView.comparatorEl.value = blockModel.comparator;
-  }
-
-  if (blockModel.errors.length > 0) {
-    blockView.errorBoxEl.textContent = blockModel.errors.join(", ");
-    blockView.blockEl.className = "blockError";
-  } else {
-    blockView.errorBoxEl.textContent = "";
-    blockView.blockEl.className = "blockSuccess";
-  }
 }
 
 function renderMemory(memory, memoryView) {

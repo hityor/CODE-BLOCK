@@ -132,27 +132,40 @@ function validateAssign(blockModel, declared, errorsById, errors) {
   }
 }
 
-function validateIf(blockModel, declared, errorsById, errors) {
-  if (!COMPARE_OPERATORS.has(blockModel.comparator)) {
-    errors.push(`Неизвестный оператор сравнения: ${blockModel.comparator}`);
-  }
+function validateCompare(blockModel, declared, errorsById) {
+  const errors = [];
 
   validateOperand(
-    blockModel.conditionChildren[0],
+    blockModel.children[0],
     blockModel.left,
     declared,
     errorsById,
     errors,
-    "Левая часть условия",
+    "Левый",
   );
+
   validateOperand(
-    blockModel.conditionChildren[1],
+    blockModel.children[1],
     blockModel.right,
     declared,
     errorsById,
     errors,
-    "Правая часть условия",
+    "Правый",
   );
+
+  if (!COMPARE_OPERATORS.has(blockModel.operator)) {
+    errors.push(`Неизвестный оператор сравнения: ${blockModel.operator}`);
+  }
+
+  errorsById.set(blockModel.id, errors);
+}
+
+function validateIf(blockModel, declared, errorsById, errors) {
+  if (!blockModel.conditionChild) {
+    errors.push("Условие не задано");
+  } else {
+    validateCompare(blockModel.conditionChild, declared, errorsById);
+  }
 
   for (const child of blockModel.children) {
     validateStatementBlock(child, declared, errorsById);
@@ -164,26 +177,11 @@ function validateIf(blockModel, declared, errorsById, errors) {
 }
 
 function validateWhile(blockModel, declared, errorsById, errors) {
-  if (!COMPARE_OPERATORS.has(blockModel.comparator)) {
-    errors.push(`Неизвестный оператор сравнения: ${blockModel.comparator}`);
+  if (!blockModel.conditionChild) {
+    errors.push("Условие не задано");
+  } else {
+    validateCompare(blockModel.conditionChild, declared, errorsById);
   }
-
-  validateOperand(
-    blockModel.conditionChildren[0],
-    blockModel.left,
-    declared,
-    errorsById,
-    errors,
-    "Левая часть условия",
-  );
-  validateOperand(
-    blockModel.conditionChildren[1],
-    blockModel.right,
-    declared,
-    errorsById,
-    errors,
-    "Правая часть условия",
-  );
 
   for (const child of blockModel.children) {
     validateStatementBlock(child, declared, errorsById);

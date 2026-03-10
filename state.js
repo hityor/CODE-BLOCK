@@ -42,14 +42,24 @@ export function makeVarGetModel() {
   };
 }
 
+export function makeCompareModel() {
+  return {
+    id: nextId++,
+    type: "compare",
+    operator: ">",
+    left: makeOperandModel(),
+    right: makeOperandModel(),
+    children: [],
+    errors: [],
+  };
+}
+
 function makeIfModel() {
   return {
     id: nextId++,
     type: "if",
     comparator: ">",
-    left: makeOperandModel(),
-    right: makeOperandModel(),
-    conditionChildren: [null, null],
+    conditionChild: null,
     children: [],
     elseChildren: [],
     errors: [],
@@ -61,9 +71,7 @@ function makeWhileModel() {
     id: nextId++,
     type: "while",
     comparator: ">",
-    left: makeOperandModel(),
-    right: makeOperandModel(),
-    conditionChildren: [null, null],
+    conditionChild: null,
     children: [],
     errors: [],
   };
@@ -82,7 +90,11 @@ export function isExpressionBlockType(blockType) {
   return blockType === "arith" || blockType === "varGet";
 }
 
-function createBlockByType(blockType) {
+export function isConditionBlockType(blockType) {
+  return blockType === "compare";
+}
+
+export function createBlockByType(blockType) {
   switch (blockType) {
     case "varDecl":
       return makeVarDeclModel();
@@ -92,6 +104,8 @@ function createBlockByType(blockType) {
       return makeArithmeticModel();
     case "varGet":
       return makeVarGetModel();
+    case "compare":
+      return makeCompareModel();
     case "if":
       return makeIfModel();
     case "while":
@@ -112,8 +126,8 @@ function getAllChildren(node) {
     for (const child of node.children) if (child) children.push(child);
   }
 
-  if (Array.isArray(node.conditionChildren)) {
-    for (const child of node.conditionChildren) if (child) children.push(child);
+  if (node.conditionChild) {
+    children.push(node.conditionChild);
   }
 
   if (Array.isArray(node.elseChildren)) {
@@ -157,10 +171,8 @@ function canInsertExpressionIntoParent(parentBlock, operandType) {
     (operandType === "expression" && parentBlock.type === "assign") ||
     (operandType === "left" && parentBlock.type === "arith") ||
     (operandType === "right" && parentBlock.type === "arith") ||
-    (operandType === "condLeft" && parentBlock.type === "if") ||
-    (operandType === "condRight" && parentBlock.type === "if") ||
-    (operandType === "condLeft" && parentBlock.type === "while") ||
-    (operandType === "condRight" && parentBlock.type === "while")
+    (operandType === "left" && parentBlock.type === "compare") ||
+    (operandType === "right" && parentBlock.type === "compare")
   );
 }
 
@@ -183,16 +195,6 @@ export function insertChildIntoParent(parentBlock, newBlock, operandType) {
     return true;
   }
 
-  if (operandType === "condLeft") {
-    parentBlock.conditionChildren[0] = newBlock;
-    return true;
-  }
-
-  if (operandType === "condRight") {
-    parentBlock.conditionChildren[1] = newBlock;
-    return true;
-  }
-
   return false;
 }
 
@@ -211,18 +213,6 @@ function removeFromParent(parent, block) {
     const idx = parent.elseChildren.indexOf(block);
     if (idx !== -1) {
       parent.elseChildren.splice(idx, 1);
-      return true;
-    }
-  }
-
-  if (Array.isArray(parent.conditionChildren)) {
-    if (parent.conditionChildren[0] === block) {
-      parent.conditionChildren[0] = null;
-      return true;
-    }
-
-    if (parent.conditionChildren[1] === block) {
-      parent.conditionChildren[1] = null;
       return true;
     }
   }
@@ -303,12 +293,7 @@ export function moveBlockToParent(blockId, newParent, operandType) {
       parentBlockModel?.children?.[0] === blockModel) ||
     (operandType === "left" &&
       parentBlockModel?.children?.[0] === blockModel) ||
-    (operandType === "right" &&
-      parentBlockModel?.children?.[1] === blockModel) ||
-    (operandType === "condLeft" &&
-      parentBlockModel?.conditionChildren?.[0] === blockModel) ||
-    (operandType === "condRight" &&
-      parentBlockModel?.conditionChildren?.[1] === blockModel)
+    (operandType === "right" && parentBlockModel?.children?.[1] === blockModel)
   ) {
     return;
   }

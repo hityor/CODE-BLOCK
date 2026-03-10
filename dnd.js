@@ -9,6 +9,7 @@ import {
   insertChildIntoParent,
   isStatementBlockType,
   moveStatementBlockToElse,
+  createBlockByType,
 } from "./state.js";
 
 export class DnD {
@@ -166,6 +167,40 @@ export class DnD {
       } else if (data.startsWith("move:")) {
         const blockId = parseInt(data.split(":")[1], 10);
         moveBlockToParent(blockId, parent, operandType);
+        this.validateAndRender();
+      }
+    });
+  }
+
+  makeConditionDropZone(zone, parent) {
+    zone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+
+      const data = e.dataTransfer.getData("text/plain");
+      if (!data) return;
+
+      if (data.startsWith("add:")) {
+        const blockType = data.split(":")[1];
+        if (blockType === "compare") {
+          e.dataTransfer.dropEffect = "copy";
+        }
+      } else if (data.startsWith("move:")) {
+        e.dataTransfer.dropEffect = "move";
+      }
+    });
+
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const data = e.dataTransfer.getData("text/plain");
+      if (!data) return;
+
+      if (data.startsWith("add:")) {
+        const blockType = data.split(":")[1];
+        if (blockType !== "compare") return;
+
+        parent.conditionChild = createBlockByType(blockType);
         this.validateAndRender();
       }
     });

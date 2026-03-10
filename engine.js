@@ -29,6 +29,22 @@ function expressionFromTarget(childBlock, operandModel) {
   return operandToAst(operandModel);
 }
 
+function buildConditionFromBlock(block) {
+  if (block.type === "compare") {
+    const left = block.children[0]
+      ? buildExprFromBlock(block.children[0])
+      : operandToAst(block.left);
+
+    const right = block.children[1]
+      ? buildExprFromBlock(block.children[1])
+      : operandToAst(block.right);
+
+    return new CompareExpr(block.operator, left, right);
+  }
+
+  throw new Error("Неподдерживаемый блок условия: " + block.type);
+}
+
 function buildStatements(blocks, parseNames) {
   const statements = [];
 
@@ -51,12 +67,7 @@ function buildStatements(blocks, parseNames) {
     }
 
     if (block.type === "if") {
-      const left = expressionFromTarget(block.conditionChildren[0], block.left);
-      const right = expressionFromTarget(
-        block.conditionChildren[1],
-        block.right,
-      );
-      const condition = new CompareExpr(block.comparator, left, right);
+      const condition = buildConditionFromBlock(block.conditionChild);
       const thenBody = new BlockStatement(
         buildStatements(block.children, parseNames),
       );
@@ -71,15 +82,11 @@ function buildStatements(blocks, parseNames) {
     }
 
     if (block.type === "while") {
-      const left = expressionFromTarget(block.conditionChildren[0], block.left);
-      const right = expressionFromTarget(
-        block.conditionChildren[1],
-        block.right,
-      );
-      const condition = new CompareExpr(block.comparator, left, right);
+      const condition = buildConditionFromBlock(block.conditionChild);
       const body = new BlockStatement(
         buildStatements(block.children, parseNames),
       );
+
       statements.push(new WhileStatement(condition, body));
       continue;
     }
@@ -102,17 +109,17 @@ function hasAnyErrorsInBlock(block) {
       return true;
   }
 
+  if (block.type === "compare") {
+    if (block.children[0] && hasAnyErrorsInBlock(block.children[0]))
+      return true;
+    if (block.children[1] && hasAnyErrorsInBlock(block.children[1]))
+      return true;
+  }
+
   if (block.type === "if") {
-    if (
-      block.conditionChildren[0] &&
-      hasAnyErrorsInBlock(block.conditionChildren[0])
-    )
+    if (block.conditionChild && hasAnyErrorsInBlock(block.conditionChild))
       return true;
-    if (
-      block.conditionChildren[1] &&
-      hasAnyErrorsInBlock(block.conditionChildren[1])
-    )
-      return true;
+
     for (const child of block.children) {
       if (hasAnyErrorsInBlock(child)) return true;
     }
@@ -122,16 +129,9 @@ function hasAnyErrorsInBlock(block) {
   }
 
   if (block.type === "while") {
-    if (
-      block.conditionChildren[0] &&
-      hasAnyErrorsInBlock(block.conditionChildren[0])
-    )
+    if (block.conditionChild && hasAnyErrorsInBlock(block.conditionChild))
       return true;
-    if (
-      block.conditionChildren[1] &&
-      hasAnyErrorsInBlock(block.conditionChildren[1])
-    )
-      return true;
+
     for (const child of block.children) {
       if (hasAnyErrorsInBlock(child)) return true;
     }
