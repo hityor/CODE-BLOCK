@@ -59,7 +59,7 @@ export function makeArrayGetModel() {
     arrayName: "",
     index: makeOperandModel(),
     children: [],
-    errors,
+    errors: [],
   };
 }
 
@@ -71,7 +71,7 @@ export function makeArraySetModel() {
     index: makeOperandModel(),
     value: makeOperandModel(),
     children: [],
-    errors,
+    errors: [],
   };
 }
 
@@ -349,7 +349,10 @@ export function moveBlockToParent(blockId, newParent, operandType) {
       parentBlockModel?.children?.[0] === blockModel) ||
     (operandType === "left" &&
       parentBlockModel?.children?.[0] === blockModel) ||
-    (operandType === "right" && parentBlockModel?.children?.[1] === blockModel)
+    (operandType === "right" &&
+      parentBlockModel?.children?.[1] === blockModel) ||
+    (operandType === "index" && parentBlockModel?.children[0] === blockModel) ||
+    (operandType === "value" && parentBlockModel?.children[1] === blockModel)
   ) {
     return;
   }

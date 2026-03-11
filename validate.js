@@ -170,8 +170,10 @@ function validateArrayDecl(blockModel, declared, errors) {
     errors.push("Имя массива не задано");
   } else if (!isValidVarName(blockModel.name)) {
     errors.push(`Некоррктное имя массива: ${blockModel.name}`);
+  } else if (declared.has(blockModel.name)) {
+    errors.push(`Имя уже занято: ${blockModel.name}`);
   } else {
-    declared.push(blockModel.name);
+    declared.add(blockModel.name);
   }
 
   if (blockModel.size === "") {
@@ -213,6 +215,8 @@ function validateArrayGet(blockModel, declared, errorsById) {
     errors,
     "Индекс",
   );
+
+  errorsById.set(blockModel.id, errors);
 }
 
 function validateArraySet(blockModel, declared, errorsById, errors) {
@@ -236,7 +240,7 @@ function validateArraySet(blockModel, declared, errorsById, errors) {
     declared,
     errorsById,
     errors,
-    "Индекс",
+    "Значение",
   );
 }
 

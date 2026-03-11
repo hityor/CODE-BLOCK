@@ -290,6 +290,7 @@ function renderBlockBody(blockModel) {
       blockView.indexView,
       blockModel.children[0],
     );
+    return;
   }
 
   if (blockModel.type === "arraySet") {
@@ -598,7 +599,7 @@ function makeArrayDeclView(blockModel) {
   blockEl.draggable = true;
 
   const labelEl = document.createElement("span");
-  label.textContent = "array ";
+  labelEl.textContent = "array ";
 
   const nameInputEl = document.createElement("input");
   nameInputEl.placeholder = "arr";
