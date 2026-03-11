@@ -1,33 +1,9 @@
-import {
-  program,
-  putBlock,
-  putElseBlock,
-  moveStatementBlock,
-  makeArithmeticModel,
-  makeVarGetModel,
-  moveBlockToParent,
-  insertChildIntoParent,
-  isStatementBlockType,
-  moveStatementBlockToElse,
-  createBlockByType,
-  makeArrayGetModel,
-} from "./state.js";
+import { program } from "./state.js";
+import { validateAndRender } from "./ui.js";
 
 export class DnD {
-  constructor(programCanvasEl, validateAndRender) {
-    this.programCanvasEl = programCanvasEl;
-    this.validateAndRender = validateAndRender;
-  }
-
-  getDropIndex(zone, mouseY) {
-    const elements = Array.from(zone.children);
-
-    for (let i = 0; i < elements.length; i++) {
-      const rect = elements[i].getBoundingClientRect();
-      const mid = rect.top + rect.height / 2;
-      if (mouseY < mid) return i;
-    }
-    return elements.length;
+  constructor() {
+    this.init();
   }
 
   init() {
@@ -47,6 +23,17 @@ export class DnD {
     });
   }
 
+  getDropIndex(zone, mouseY) {
+    const elements = Array.from(zone.children);
+
+    for (let i = 0; i < elements.length; i++) {
+      const rect = elements[i].getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      if (mouseY < mid) return i;
+    }
+    return elements.length;
+  }
+
   makeDropZone(zone, place = program) {
     zone.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -56,7 +43,8 @@ export class DnD {
 
       if (data.startsWith("add:")) {
         const blockType = data.split(":")[1];
-        if (isStatementBlockType(blockType)) e.dataTransfer.dropEffect = "copy";
+        if (program.isStatementBlockType(blockType))
+          e.dataTransfer.dropEffect = "copy";
       } else if (data.startsWith("move:")) {
         e.dataTransfer.dropEffect = "move";
       }
@@ -71,16 +59,16 @@ export class DnD {
 
       if (data.startsWith("add:")) {
         const blockType = data.split(":")[1];
-        if (!isStatementBlockType(blockType)) return;
+        if (!program.isStatementBlockType(blockType)) return;
 
         const addIndex = this.getDropIndex(zone, e.clientY);
-        putBlock(place, blockType, addIndex);
-        this.validateAndRender();
+        program.putBlock(place, blockType, addIndex);
+        validateAndRender();
       } else if (data.startsWith("move:")) {
         const blockId = parseInt(data.split(":")[1], 10);
         const newIndex = this.getDropIndex(zone, e.clientY);
-        moveStatementBlock(blockId, place, newIndex);
-        this.validateAndRender();
+        program.moveStatementBlock(blockId, place, newIndex);
+        validateAndRender();
       }
     });
   }
@@ -94,7 +82,8 @@ export class DnD {
 
       if (data.startsWith("add:")) {
         const blockType = data.split(":")[1];
-        if (isStatementBlockType(blockType)) e.dataTransfer.dropEffect = "copy";
+        if (program.isStatementBlockType(blockType))
+          e.dataTransfer.dropEffect = "copy";
       } else if (data.startsWith("move:")) {
         e.dataTransfer.dropEffect = "move";
       }
@@ -109,16 +98,16 @@ export class DnD {
 
       if (data.startsWith("add:")) {
         const blockType = data.split(":")[1];
-        if (!isStatementBlockType(blockType)) return;
+        if (!program.isStatementBlockType(blockType)) return;
 
         const addIndex = this.getDropIndex(zone, e.clientY);
-        putElseBlock(place, blockType, addIndex);
-        this.validateAndRender();
+        program.putElseBlock(place, blockType, addIndex);
+        validateAndRender();
       } else if (data.startsWith("move:")) {
         const blockId = parseInt(data.split(":")[1], 10);
         const newIndex = this.getDropIndex(zone, e.clientY);
-        moveStatementBlockToElse(blockId, place, newIndex);
-        this.validateAndRender();
+        program.moveStatementBlockToElse(blockId, place, newIndex);
+        validateAndRender();
       }
     });
   }
@@ -134,7 +123,7 @@ export class DnD {
       if (
         blockType === "arith" ||
         blockType === "varGet" ||
-        blockType === "arrayget"
+        blockType === "arrayGet"
       )
         e.dataTransfer.dropEffect = "copy";
     } else if (data.startsWith("move:")) {
@@ -155,27 +144,20 @@ export class DnD {
       if (data.startsWith("add:")) {
         const blockType = data.split(":")[1];
 
-        let newBlock;
-        switch (blockType) {
-          case "arith":
-            newBlock = makeArithmeticModel();
-            break;
-          case "varGet":
-            newBlock = makeVarGetModel();
-            break;
-          case "arrayGet":
-            newBlock = makeArrayGetModel();
-            break;
-          default:
-            return;
-        }
+        if (
+          blockType === "arith" ||
+          blockType === "varGet" ||
+          blockType === "arrayGet"
+        ) {
+          const newBlock = program.createBlockByType(blockType);
 
-        insertChildIntoParent(parent, newBlock, operandType);
-        this.validateAndRender();
+          program.insertChildIntoParent(parent, newBlock, operandType);
+          validateAndRender();
+        }
       } else if (data.startsWith("move:")) {
         const blockId = parseInt(data.split(":")[1], 10);
-        moveBlockToParent(blockId, parent, operandType);
-        this.validateAndRender();
+        program.moveBlockToParent(blockId, parent, operandType);
+        validateAndRender();
       }
     });
   }
@@ -208,8 +190,8 @@ export class DnD {
         const blockType = data.split(":")[1];
         if (blockType !== "compare") return;
 
-        parent.conditionChild = createBlockByType(blockType);
-        this.validateAndRender();
+        parent.conditionChild = program.createBlockByType(blockType);
+        validateAndRender();
       }
     });
   }

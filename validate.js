@@ -98,7 +98,7 @@ function validateExpressionBlock(blockModel, declared, errorsById) {
 }
 
 function validateVarDecl(blockModel, declared, errors) {
-  const names = parseNames(blockModel.raw);
+  const names = parseNames(blockModel.rawNames);
   if (names.length === 0) errors.push("Объявление переменной пустое");
 
   const localDeclared = new Set();
@@ -194,7 +194,7 @@ function validateArrayDecl(blockModel, declared, errors) {
   }
 
   if (n <= 0) {
-    errors.push("РАзмер массива должен быть больше 0");
+    errors.push("Размер массива должен быть больше 0");
   }
 }
 

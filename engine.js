@@ -1,3 +1,5 @@
+import { parseNames } from "./utils.js";
+
 function operandToAst(operand) {
   if (operand.variable) {
     return new VariableExpr(operand.variable);
@@ -53,12 +55,12 @@ function buildConditionFromBlock(block) {
   throw new Error("Неподдерживаемый блок условия: " + block.type);
 }
 
-function buildStatements(blocks, parseNames) {
+function buildStatements(blocks) {
   const statements = [];
 
   for (const block of blocks) {
     if (block.type === "varDecl") {
-      const names = parseNames(block.raw);
+      const names = parseNames(block.rawNames);
       for (const name of names) {
         statements.push(new DeclareStatement(name));
       }
@@ -98,13 +100,11 @@ function buildStatements(blocks, parseNames) {
 
     if (block.type === "if") {
       const condition = buildConditionFromBlock(block.conditionChild);
-      const thenBody = new BlockStatement(
-        buildStatements(block.children, parseNames),
-      );
+      const thenBody = new BlockStatement(buildStatements(block.children));
 
       const elseBody =
         block.elseChildren.length > 0
-          ? new BlockStatement(buildStatements(block.elseChildren, parseNames))
+          ? new BlockStatement(buildStatements(block.elseChildren))
           : undefined;
 
       statements.push(new IfStatement(condition, thenBody, elseBody));
@@ -113,9 +113,7 @@ function buildStatements(blocks, parseNames) {
 
     if (block.type === "while") {
       const condition = buildConditionFromBlock(block.conditionChild);
-      const body = new BlockStatement(
-        buildStatements(block.children, parseNames),
-      );
+      const body = new BlockStatement(buildStatements(block.children));
 
       statements.push(new WhileStatement(condition, body));
       continue;
@@ -185,20 +183,13 @@ function hasAnyErrorsInBlock(block) {
   return false;
 }
 
-export function buildAstFromProgram(program, parseNames) {
-  return new BlockStatement(buildStatements(program.children, parseNames));
+export function buildAstFromProgram(program) {
+  return new BlockStatement(buildStatements(program.children));
 }
 
 export function runProgram(
   program,
-  {
-    parseNames,
-    validateAndStoreErrors,
-    render,
-    appendLogs,
-    renderMemory,
-    memoryView,
-  },
+  { validateAndStoreErrors, render, appendLogs, renderMemory, memoryView },
 ) {
   memoryView.innerHTML = "";
 
@@ -210,7 +201,7 @@ export function runProgram(
     return;
   }
 
-  const ast = buildAstFromProgram(program, parseNames);
+  const ast = buildAstFromProgram(program);
   const compiler = new Tokenizer();
   const instructions = compiler.compile(ast);
 
