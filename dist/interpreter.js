@@ -62,6 +62,25 @@ class BlockStatement {
         this.statements = statements;
     }
 }
+class DeclareArrayStatement {
+    constructor(arrayName, size) {
+        this.arrayName = arrayName;
+        this.size = size;
+    }
+}
+class ArrayGetExpr {
+    constructor(arrayName, indexExpr) {
+        this.arrayName = arrayName;
+        this.indexExpr = indexExpr;
+    }
+}
+class ArraySetStatement {
+    constructor(arrayName, indexExpr, valueExpr) {
+        this.arrayName = arrayName;
+        this.indexExpr = indexExpr;
+        this.valueExpr = valueExpr;
+    }
+}
 class IfStatement {
     constructor(condition, thenBranch, elseBranch) {
         this.condition = condition;
@@ -89,23 +108,26 @@ var TokenCode;
     TokenCode[TokenCode["DECLARE_VAR"] = 1] = "DECLARE_VAR";
     TokenCode[TokenCode["ASSIGN_VAR"] = 2] = "ASSIGN_VAR";
     TokenCode[TokenCode["GET_VAR_VALUE"] = 3] = "GET_VAR_VALUE";
-    TokenCode[TokenCode["PRINT"] = 4] = "PRINT";
-    TokenCode[TokenCode["ADD"] = 5] = "ADD";
-    TokenCode[TokenCode["SUBTR"] = 6] = "SUBTR";
-    TokenCode[TokenCode["MULT"] = 7] = "MULT";
-    TokenCode[TokenCode["DIV"] = 8] = "DIV";
-    TokenCode[TokenCode["MOD"] = 9] = "MOD";
-    TokenCode[TokenCode["EQUAL"] = 10] = "EQUAL";
-    TokenCode[TokenCode["N_EQUAL"] = 11] = "N_EQUAL";
-    TokenCode[TokenCode["LOWER"] = 12] = "LOWER";
-    TokenCode[TokenCode["LOWER_EQ"] = 13] = "LOWER_EQ";
-    TokenCode[TokenCode["GREATER"] = 14] = "GREATER";
-    TokenCode[TokenCode["GREATER_EQ"] = 15] = "GREATER_EQ";
-    TokenCode[TokenCode["AND"] = 16] = "AND";
-    TokenCode[TokenCode["OR"] = 17] = "OR";
-    TokenCode[TokenCode["NOT"] = 18] = "NOT";
-    TokenCode[TokenCode["JUMP"] = 19] = "JUMP";
-    TokenCode[TokenCode["JUMP_IF_FALSE"] = 20] = "JUMP_IF_FALSE";
+    TokenCode[TokenCode["DECLARE_ARRAY"] = 4] = "DECLARE_ARRAY";
+    TokenCode[TokenCode["GET_ARRAY_VALUE"] = 5] = "GET_ARRAY_VALUE";
+    TokenCode[TokenCode["SET_ARRAY_VALUE"] = 6] = "SET_ARRAY_VALUE";
+    TokenCode[TokenCode["PRINT"] = 7] = "PRINT";
+    TokenCode[TokenCode["ADD"] = 8] = "ADD";
+    TokenCode[TokenCode["SUBTR"] = 9] = "SUBTR";
+    TokenCode[TokenCode["MULT"] = 10] = "MULT";
+    TokenCode[TokenCode["DIV"] = 11] = "DIV";
+    TokenCode[TokenCode["MOD"] = 12] = "MOD";
+    TokenCode[TokenCode["EQUAL"] = 13] = "EQUAL";
+    TokenCode[TokenCode["N_EQUAL"] = 14] = "N_EQUAL";
+    TokenCode[TokenCode["LOWER"] = 15] = "LOWER";
+    TokenCode[TokenCode["LOWER_EQ"] = 16] = "LOWER_EQ";
+    TokenCode[TokenCode["GREATER"] = 17] = "GREATER";
+    TokenCode[TokenCode["GREATER_EQ"] = 18] = "GREATER_EQ";
+    TokenCode[TokenCode["AND"] = 19] = "AND";
+    TokenCode[TokenCode["OR"] = 20] = "OR";
+    TokenCode[TokenCode["NOT"] = 21] = "NOT";
+    TokenCode[TokenCode["JUMP"] = 22] = "JUMP";
+    TokenCode[TokenCode["JUMP_IF_FALSE"] = 23] = "JUMP_IF_FALSE";
 })(TokenCode || (TokenCode = {}));
 class Tokenizer {
     constructor() {
@@ -135,6 +157,10 @@ class Tokenizer {
         }
         else if (expr instanceof VariableExpr) {
             this.emit(TokenCode.GET_VAR_VALUE, expr.name);
+        }
+        else if (expr instanceof ArrayGetExpr) {
+            this.emitExpression(expr.indexExpr);
+            this.emit(TokenCode.GET_ARRAY_VALUE, expr.arrayName);
         }
         else if (expr instanceof BinaryExpr) {
             this.emitExpression(expr.leftOperand);
@@ -179,6 +205,17 @@ class Tokenizer {
         else if (stmt instanceof AssignStatement) {
             this.emitExpression(stmt.expression);
             this.emit(TokenCode.ASSIGN_VAR, stmt.varName);
+        }
+        else if (stmt instanceof DeclareArrayStatement) {
+            this.emit(TokenCode.DECLARE_ARRAY, {
+                name: stmt.arrayName,
+                size: stmt.size,
+            });
+        }
+        else if (stmt instanceof ArraySetStatement) {
+            this.emitExpression(stmt.indexExpr);
+            this.emitExpression(stmt.valueExpr);
+            this.emit(TokenCode.SET_ARRAY_VALUE, stmt.arrayName);
         }
         else if (stmt instanceof IfStatement) {
             this.emitExpression(stmt.condition);
@@ -297,6 +334,44 @@ class Executer {
                     this.memoryStorage.set(varName, value);
                     if (this.output != console.log)
                         this.output(`Переменной <b>${varName}</b> присвоено значение <b>${value}</b>`);
+                    break;
+                }
+                case TokenCode.DECLARE_ARRAY: {
+                    const { name, size } = instr.arg;
+                    this.memoryStorage.set(name, new Array(size).fill(0));
+                    if (this.output != console.log) {
+                        this.output(`Массив <b>${name}</b> размера <b>${size}</b> объявлен`);
+                    }
+                    break;
+                }
+                case TokenCode.GET_ARRAY_VALUE: {
+                    const arrayName = instr.arg;
+                    const index = Math.trunc(this.valueStack.pop());
+                    const arr = this.memoryStorage.get(arrayName);
+                    if (!Array.isArray(arr)) {
+                        throw new Error(`Массив не найден: ${arrayName}`);
+                    }
+                    if (index < 0 || index >= arr.length) {
+                        throw new Error(`Индекс вне границ массива: ${arrayName}[${index}]`);
+                    }
+                    this.valueStack.push(arr[index]);
+                    break;
+                }
+                case TokenCode.SET_ARRAY_VALUE: {
+                    const arrayName = instr.arg;
+                    const value = Math.trunc(this.valueStack.pop());
+                    const index = Math.trunc(this.valueStack.pop());
+                    const arr = this.memoryStorage.get(arrayName);
+                    if (!Array.isArray(arr)) {
+                        throw new Error(`Массив не найден: ${arrayName}`);
+                    }
+                    if (index < 0 || index >= arr.length) {
+                        throw new Error(`Индекс вне границ массива: ${arrayName}[${index}]`);
+                    }
+                    arr[index] = value;
+                    if (this.output != console.log) {
+                        this.output(`Элементу <b>${arrayName}[${index}]</b> присвоено значение <b>${value}</b>`);
+                    }
                     break;
                 }
                 case TokenCode.JUMP:

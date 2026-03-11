@@ -10,6 +10,7 @@ import {
   isStatementBlockType,
   moveStatementBlockToElse,
   createBlockByType,
+  makeArrayGetModel,
 } from "./state.js";
 
 export class DnD {
@@ -130,7 +131,11 @@ export class DnD {
 
     if (data.startsWith("add:")) {
       const blockType = data.split(":")[1];
-      if (blockType === "arith" || blockType === "varGet")
+      if (
+        blockType === "arith" ||
+        blockType === "varGet" ||
+        blockType === "arrayget"
+      )
         e.dataTransfer.dropEffect = "copy";
     } else if (data.startsWith("move:")) {
       e.dataTransfer.dropEffect = "move";
@@ -157,6 +162,9 @@ export class DnD {
             break;
           case "varGet":
             newBlock = makeVarGetModel();
+            break;
+          case "arrayGet":
+            newBlock = makeArrayGetModel();
             break;
           default:
             return;

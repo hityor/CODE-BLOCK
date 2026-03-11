@@ -47,10 +47,19 @@ body {
   padding: 15px;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+
+#logContent {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 button {
   padding: 10px 15px;
+  margin-right: 5px;
   background: #3498db;
   color: #ffffff;
   border: none;

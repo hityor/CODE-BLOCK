@@ -21,6 +21,14 @@ function buildExprFromBlock(block) {
     return new VariableExpr(block.variable);
   }
 
+  if (block.type === "arrayGet") {
+    const indexExpr = block.children[0]
+      ? buildExprFromBlock(block.children[0])
+      : operandToAst(block.index);
+
+    return new ArrayGetExpr(block.arrayName, indexExpr);
+  }
+
   throw new Error("Unsupported expression block type: " + block.type);
 }
 
@@ -66,6 +74,28 @@ function buildStatements(blocks, parseNames) {
       continue;
     }
 
+    if (block.type === "arrayDecl") {
+      statements.push(
+        new DeclareArrayStatement(block.name, Number(block.size)),
+      );
+      continue;
+    }
+
+    if (block.type === "arraySet") {
+      const indexExpr = block.children[0]
+        ? buildExprFromBlock(block.children[0])
+        : operandToAst(block.index);
+
+      const valueExpr = block.children[1]
+        ? buildExprFromBlock(block.children[1])
+        : operandToAst(block.value);
+
+      statements.push(
+        new ArraySetStatement(block.arrayName, indexExpr, valueExpr),
+      );
+      continue;
+    }
+
     if (block.type === "if") {
       const condition = buildConditionFromBlock(block.conditionChild);
       const thenBody = new BlockStatement(
@@ -107,6 +137,21 @@ function hasAnyErrorsInBlock(block) {
       return true;
     if (block.children[1] && hasAnyErrorsInBlock(block.children[1]))
       return true;
+  }
+
+  if (block.type === "arrayGet") {
+    if (block.children[0] && hasAnyErrorsInBlock(block.children[0])) {
+      return true;
+    }
+  }
+
+  if (block.type === "arraySet") {
+    if (block.children[0] && hasAnyErrorsInBlock(block.children[0])) {
+      return true;
+    }
+    if (block.children[1] && hasAnyErrorsInBlock(block.children[1])) {
+      return true;
+    }
   }
 
   if (block.type === "compare") {

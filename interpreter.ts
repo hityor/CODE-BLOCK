@@ -41,7 +41,7 @@ class BinaryExpr<
   ) {}
 }
 
-type Arithmetic = IntegerLiteral | ArithmeticExpr | VariableExpr;
+type Arithmetic = IntegerLiteral | ArithmeticExpr | VariableExpr | ArrayGetExpr;
 class ArithmeticExpr extends BinaryExpr<Arithmetic, IntegerLiteral> {}
 class CompareExpr extends BinaryExpr<Arithmetic, BooleanLiteral> {}
 
@@ -66,6 +66,28 @@ class AssignStatement implements Statement {
 
 class BlockStatement implements Statement {
   constructor(public statements: Statement[]) {}
+}
+
+class DeclareArrayStatement implements Statement {
+  constructor(
+    public arrayName: string,
+    public size: number,
+  ) {}
+}
+
+class ArrayGetExpr implements Expression {
+  constructor(
+    public arrayName: string,
+    public indexExpr: Arithmetic,
+  ) {}
+}
+
+class ArraySetStatement implements Statement {
+  constructor(
+    public arrayName: string,
+    public indexExpr: Arithmetic,
+    public valueExpr: Arithmetic,
+  ) {}
 }
 
 class IfStatement implements Statement {
@@ -97,6 +119,9 @@ enum TokenCode {
   DECLARE_VAR,
   ASSIGN_VAR,
   GET_VAR_VALUE,
+  DECLARE_ARRAY,
+  GET_ARRAY_VALUE,
+  SET_ARRAY_VALUE,
   PRINT,
 
   ADD,
@@ -151,6 +176,9 @@ class Tokenizer {
       this.emit(TokenCode.PUSH_VALUE, expr.value);
     } else if (expr instanceof VariableExpr) {
       this.emit(TokenCode.GET_VAR_VALUE, expr.name);
+    } else if (expr instanceof ArrayGetExpr) {
+      this.emitExpression(expr.indexExpr);
+      this.emit(TokenCode.GET_ARRAY_VALUE, expr.arrayName);
     } else if (expr instanceof BinaryExpr) {
       this.emitExpression(expr.leftOperand);
       this.emitExpression(expr.rightOperand);
@@ -193,6 +221,15 @@ class Tokenizer {
     } else if (stmt instanceof AssignStatement) {
       this.emitExpression(stmt.expression);
       this.emit(TokenCode.ASSIGN_VAR, stmt.varName);
+    } else if (stmt instanceof DeclareArrayStatement) {
+      this.emit(TokenCode.DECLARE_ARRAY, {
+        name: stmt.arrayName,
+        size: stmt.size,
+      });
+    } else if (stmt instanceof ArraySetStatement) {
+      this.emitExpression(stmt.indexExpr);
+      this.emitExpression(stmt.valueExpr);
+      this.emit(TokenCode.SET_ARRAY_VALUE, stmt.arrayName);
     } else if (stmt instanceof IfStatement) {
       this.emitExpression(stmt.condition);
 
@@ -335,6 +372,61 @@ class Executer {
             this.output(
               `Переменной <b>${varName}</b> присвоено значение <b>${value}</b>`,
             );
+          break;
+        }
+        case TokenCode.DECLARE_ARRAY: {
+          const { name, size } = instr.arg;
+          this.memoryStorage.set(name, new Array(size).fill(0));
+          if (this.output != console.log) {
+            this.output(
+              `Массив <b>${name}</b> размера <b>${size}</b> объявлен`,
+            );
+          }
+          break;
+        }
+
+        case TokenCode.GET_ARRAY_VALUE: {
+          const arrayName = instr.arg;
+          const index = Math.trunc(this.valueStack.pop());
+          const arr = this.memoryStorage.get(arrayName);
+
+          if (!Array.isArray(arr)) {
+            throw new Error(`Массив не найден: ${arrayName}`);
+          }
+
+          if (index < 0 || index >= arr.length) {
+            throw new Error(
+              `Индекс вне границ массива: ${arrayName}[${index}]`,
+            );
+          }
+
+          this.valueStack.push(arr[index]);
+          break;
+        }
+
+        case TokenCode.SET_ARRAY_VALUE: {
+          const arrayName = instr.arg;
+          const value = Math.trunc(this.valueStack.pop());
+          const index = Math.trunc(this.valueStack.pop());
+          const arr = this.memoryStorage.get(arrayName);
+
+          if (!Array.isArray(arr)) {
+            throw new Error(`Массив не найден: ${arrayName}`);
+          }
+
+          if (index < 0 || index >= arr.length) {
+            throw new Error(
+              `Индекс вне границ массива: ${arrayName}[${index}]`,
+            );
+          }
+
+          arr[index] = value;
+
+          if (this.output != console.log) {
+            this.output(
+              `Элементу <b>${arrayName}[${index}]</b> присвоено значение <b>${value}</b>`,
+            );
+          }
           break;
         }
         case TokenCode.JUMP:
