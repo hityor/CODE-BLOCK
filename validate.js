@@ -88,6 +88,11 @@ function validateExpressionBlock(blockModel, declared, errorsById) {
     return;
   }
 
+  if (blockModel.type === "arrayGet") {
+    validateArrayGet(blockModel, declared, errorsById);
+    return;
+  }
+
   errors.push(`Блок "${blockModel.type}" нельзя использовать как выражение`);
   errorsById.set(blockModel.id, errors);
 }
@@ -160,6 +165,81 @@ function validateCompare(blockModel, declared, errorsById) {
   errorsById.set(blockModel.id, errors);
 }
 
+function validateArrayDecl(blockModel, declared, errors) {
+  if (!blockModel.name) {
+    errors.push("Имя массива не задано");
+  } else if (!isValidVarName(blockModel.name)) {
+    errors.push(`Некоррктное имя массива: ${blockModel.name}`);
+  } else {
+    declared.push(blockModel.name);
+  }
+
+  if (blockModel.size === "") {
+    errors.push("Размер массива не задан");
+    return;
+  }
+
+  const n = Number(blockModel.size);
+
+  if (Number.isNaN(n)) {
+    errors.push("Размер массива должен быть числом");
+    return;
+  }
+
+  if (!Number.isInteger(n)) {
+    errors.push("Размер массива должен быть целым числом");
+    return;
+  }
+
+  if (n <= 0) {
+    errors.push("РАзмер массива должен быть больше 0");
+  }
+}
+
+function validateArrayGet(blockModel, declared, errorsById) {
+  const errors = [];
+
+  if (!blockModel.arrayName) {
+    errors.push("Массив не выбран");
+  } else if (!declared.has(blockModel.arrayName)) {
+    errors.push(`Массив не объявлен: ${blockModel.arrayName}`);
+  }
+
+  validateOperand(
+    blockModel.children[0],
+    blockModel.index,
+    declared,
+    errorsById,
+    errors,
+    "Индекс",
+  );
+}
+
+function validateArraySet(blockModel, declared, errorsById, errors) {
+  if (!blockModel.arrayName) {
+    errors.push("Массив не выбран");
+  } else if (!declared.has(blockModel.arrayName)) {
+    errors.push(`Массив не объявлен: ${blockModel.arrayName}`);
+  }
+
+  validateOperand(
+    blockModel.children[0],
+    blockModel.index,
+    declared,
+    errorsById,
+    errors,
+    "Индекс",
+  );
+  validateOperand(
+    blockModel.children[1],
+    blockModel.value,
+    declared,
+    errorsById,
+    errors,
+    "Индекс",
+  );
+}
+
 function validateIf(blockModel, declared, errorsById, errors) {
   if (!blockModel.conditionChild) {
     errors.push("Условие не задано");
@@ -199,6 +279,18 @@ function validateStatementBlock(blockModel, declared, errorsById) {
 
   if (blockModel.type === "assign") {
     validateAssign(blockModel, declared, errorsById, errors);
+    errorsById.set(blockModel.id, errors);
+    return;
+  }
+
+  if (blockModel.type === "arrayDecl") {
+    validateArrayDecl(blockModel, declared, errors);
+    errorsById.set(blockModel.id, errors);
+    return;
+  }
+
+  if (blockModel.type === "arraySet") {
+    validateArraySet(blockModel, declared, errorsById, errors);
     errorsById.set(blockModel.id, errors);
     return;
   }

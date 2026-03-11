@@ -284,6 +284,28 @@ function renderBlockBody(blockModel) {
     return;
   }
 
+  if (blockModel.type === "arrayGet") {
+    renderOperandView(
+      blockModel.index,
+      blockView.indexView,
+      blockModel.children[0],
+    );
+  }
+
+  if (blockModel.type === "arraySet") {
+    renderOperandView(
+      blockModel.index,
+      blockView.indexView,
+      blockModel.children[0],
+    );
+    renderOperandView(
+      blockModel.value,
+      blockView.valueView,
+      blockModel.children[1],
+    );
+    return;
+  }
+
   if (blockModel.type === "compare") {
     renderOperandView(
       blockModel.left,
@@ -388,6 +410,19 @@ function renderBlockShell(blockModel) {
     blockModel.variable = syncVariableOptions(
       blockView.selectEl,
       blockModel.variable,
+    );
+  } else if (blockModel.type === "arrayDecl") {
+    blockView.nameInputEl.value = blockModel.name;
+    blockView.sizeInputEl.value = blockModel.size;
+  } else if (blockModel.type === "arrayGet") {
+    blockModel.arrayName = syncArrayOptions(
+      blockView.selectEl,
+      blockModel.arrayName,
+    );
+  } else if (blockModel.type === "arraySet") {
+    blockModel.arrayName = syncArrayOptions(
+      blockView.selectEl,
+      blockModel.arrayName,
     );
   } else if (blockModel.type === "compare") {
     blockView.operatorEl.value = blockModel.operator;
@@ -839,6 +874,18 @@ function ensureBlockView(blockModel) {
 
   if (blockModel.type === "varGet") {
     return makeVarGetView(blockModel);
+  }
+
+  if (blockModel.type === "arrayDecl") {
+    return makeArrayDeclView(blockModel);
+  }
+
+  if (blockModel.type === "arrayGet") {
+    return makeArrayGetView(blockModel);
+  }
+
+  if (blockModel.type === "arraySet") {
+    return makeArraySetView(blockModel);
   }
 
   if (blockModel.type === "compare") {
