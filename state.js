@@ -1,18 +1,22 @@
-export const program = { children: [] };
-
-let nextId = 1;
+export const program = { nextId: 1, children: [] };
 
 function makeOperandModel() {
   return { value: "", variable: "" };
 }
 
 function makeVarDeclModel() {
-  return { id: nextId++, type: "varDecl", raw: "", children: [], errors: [] };
+  return {
+    id: program.nextId++,
+    type: "varDecl",
+    raw: "",
+    children: [],
+    errors: [],
+  };
 }
 
 function makeAssignModel() {
   return {
-    id: nextId++,
+    id: program.nextId++,
     type: "assign",
     variable: "",
     expression: makeOperandModel(),
@@ -23,7 +27,7 @@ function makeAssignModel() {
 
 export function makeArithmeticModel() {
   return {
-    id: nextId++,
+    id: program.nextId++,
     type: "arith",
     operator: "+",
     left: makeOperandModel(),
@@ -35,7 +39,7 @@ export function makeArithmeticModel() {
 
 export function makeVarGetModel() {
   return {
-    id: nextId++,
+    id: program.nextId++,
     type: "varGet",
     variable: "",
     children: [],
@@ -45,7 +49,7 @@ export function makeVarGetModel() {
 
 function makeArrayDeclModel() {
   return {
-    id: nextId++,
+    id: program.nextId++,
     type: "arrayDecl",
     name: "",
     size: "",
@@ -55,7 +59,7 @@ function makeArrayDeclModel() {
 
 export function makeArrayGetModel() {
   return {
-    id: nextId++,
+    id: program.nextId++,
     type: "arrayGet",
     arrayName: "",
     index: makeOperandModel(),
@@ -66,7 +70,7 @@ export function makeArrayGetModel() {
 
 export function makeArraySetModel() {
   return {
-    id: nextId++,
+    id: program.nextId++,
     type: "arraySet",
     arrayName: "",
     index: makeOperandModel(),
@@ -78,7 +82,7 @@ export function makeArraySetModel() {
 
 export function makeCompareModel() {
   return {
-    id: nextId++,
+    id: program.nextId++,
     type: "compare",
     operator: ">",
     left: makeOperandModel(),
@@ -90,7 +94,7 @@ export function makeCompareModel() {
 
 function makeIfModel() {
   return {
-    id: nextId++,
+    id: program.nextId++,
     type: "if",
     comparator: ">",
     conditionChild: null,
@@ -102,7 +106,7 @@ function makeIfModel() {
 
 function makeWhileModel() {
   return {
-    id: nextId++,
+    id: program.nextId++,
     type: "while",
     comparator: ">",
     conditionChild: null,

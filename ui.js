@@ -6,6 +6,9 @@ import { parseNames, isValidVarName } from "./utils.js";
 
 const programCanvasEl = document.getElementById("canvas");
 const runBtn = document.getElementById("runBtn");
+const saveBtn = document.getElementById("saveBtn");
+const loadBtn = document.getElementById("loadBtn");
+const fileInput = document.getElementById("fileInput");
 const memoryView = document.getElementById("logContent");
 const dnd = new DnD(programCanvasEl, validateAndRender);
 
@@ -97,6 +100,50 @@ runBtn.addEventListener("click", function () {
     renderMemory,
     memoryView,
   });
+});
+
+saveBtn.addEventListener("click", function () {
+  const programJSON = JSON.stringify(program, null, 2);
+  const programFile = new Blob([programJSON], { type: "application/json" });
+  const fileDownloadURl = URL.createObjectURL(programFile);
+
+  const fileDownloadLink = document.createElement("a");
+  fileDownloadLink.href = fileDownloadURl;
+  fileDownloadLink.download = "program.json";
+
+  document.body.appendChild(fileDownloadLink);
+  fileDownloadLink.click();
+  document.body.removeChild(fileDownloadLink);
+
+  URL.revokeObjectURL(fileDownloadURl);
+});
+
+loadBtn.addEventListener("click", function () {
+  document.getElementById("fileInput").click();
+});
+
+fileInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    try {
+      const loadedProgramJSON = e.target.result;
+      program.children = JSON.parse(loadedProgramJSON).children;
+      program.nextId = JSON.parse(loadedProgramJSON).nextId;
+
+      viewById.clear();
+      programCanvasEl.innerHTML = "";
+      validateAndRender();
+    } catch (error) {
+      alert("Ошибка: некорректный файл");
+    }
+  };
+
+  reader.readAsText(file);
 });
 
 function collectDeclaredNames(containerModel, declaredNames) {
