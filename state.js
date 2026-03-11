@@ -42,6 +42,39 @@ export function makeVarGetModel() {
   };
 }
 
+function makeArrayDeclModel() {
+  return {
+    id: nextId++,
+    type: "arrayDecl",
+    name: "",
+    size: "",
+    errors: [],
+  };
+}
+
+export function makeArrayGetModel() {
+  return {
+    id: nextId++,
+    type: "arrayGet",
+    arrayName: "",
+    index: makeOperandModel(),
+    children: [],
+    errors,
+  };
+}
+
+export function makeArraySetModel() {
+  return {
+    id: nextId++,
+    type: "arraySet",
+    arrayName: "",
+    index: makeOperandModel(),
+    value: makeOperandModel(),
+    children: [],
+    errors,
+  };
+}
+
 export function makeCompareModel() {
   return {
     id: nextId++,
@@ -81,13 +114,17 @@ export function isStatementBlockType(blockType) {
   return (
     blockType === "varDecl" ||
     blockType === "assign" ||
+    blockType === "arrayDecl" ||
+    blockType === "arraySet" ||
     blockType === "if" ||
     blockType === "while"
   );
 }
 
 export function isExpressionBlockType(blockType) {
-  return blockType === "arith" || blockType === "varGet";
+  return (
+    blockType === "arith" || blockType === "varGet" || blockType === "arrayGet"
+  );
 }
 
 export function isConditionBlockType(blockType) {
@@ -104,6 +141,12 @@ export function createBlockByType(blockType) {
       return makeArithmeticModel();
     case "varGet":
       return makeVarGetModel();
+    case "arrayDecl":
+      return makeArrayDeclModel();
+    case "arrayGet":
+      return makeArrayGetModel();
+    case "arraySet":
+      return makeArraySetModel();
     case "compare":
       return makeCompareModel();
     case "if":
@@ -171,6 +214,9 @@ function canInsertExpressionIntoParent(parentBlock, operandType) {
     (operandType === "expression" && parentBlock.type === "assign") ||
     (operandType === "left" && parentBlock.type === "arith") ||
     (operandType === "right" && parentBlock.type === "arith") ||
+    (operandType === "index" && parentBlock.type === "arrayGet") ||
+    (operandType === "index" && parentBlock.type === "arraySet") ||
+    (operandType === "value" && parentBlock.type === "arraySet") ||
     (operandType === "left" && parentBlock.type === "compare") ||
     (operandType === "right" && parentBlock.type === "compare")
   );
@@ -191,6 +237,16 @@ export function insertChildIntoParent(parentBlock, newBlock, operandType) {
   }
 
   if (operandType === "right") {
+    parentBlock.children[1] = newBlock;
+    return true;
+  }
+
+  if (operandType === "index") {
+    parentBlock.children[0] = newBlock;
+    return true;
+  }
+
+  if (operandType === "value") {
     parentBlock.children[1] = newBlock;
     return true;
   }

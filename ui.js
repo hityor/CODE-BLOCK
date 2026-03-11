@@ -23,6 +23,15 @@ function getChildBlocks(blockModel) {
     if (blockModel.children[1]) children.push(blockModel.children[1]);
   }
 
+  if (blockModel.type === "arrayGet") {
+    if (blockModel.children[0]) children.push(blockModel.children[0]);
+  }
+
+  if (blockModel.type === "arraySet") {
+    if (blockModel.children[0]) children.push(blockModel.children[0]);
+    if (blockModel.children[1]) children.push(blockModel.children[1]);
+  }
+
   if (blockModel.type === "compare") {
     if (blockModel.children[0]) children.push(blockModel.children[0]);
     if (blockModel.children[1]) children.push(blockModel.children[1]);
@@ -144,6 +153,62 @@ function syncVariableOptions(varSelectEl, preferredName) {
 
   if (names.length > 0) {
     varSelectEl.value = names[0];
+    return names[0];
+  }
+
+  return "";
+}
+
+function collectDeclaredArrayNames(containerModel, declaredArrayNames) {
+  for (const blockModel of containerModel.children) {
+    if (blockModel.type === "arrayDecl" && blockModel.name) {
+      declaredArrayNames.add(blockModel.name);
+    }
+
+    if (blockModel.type === "if" || blockModel.type === "while") {
+      collectDeclaredArrayNames(blockModel, declaredArrayNames);
+    }
+  }
+
+  if (Array.isArray(containerModel.elseChildren)) {
+    for (const blockModel of containerModel.elseChildren) {
+      if (blockModel.type === "arrayDecl" && blockModel.name) {
+        declaredArrayNames.add(blockModel.name);
+      }
+
+      if (blockModel.type === "if" || blockModel.type === "while") {
+        collectDeclaredArrayNames(blockModel, declaredArrayNames);
+      }
+    }
+  }
+}
+
+function getDeclaredArrayNames() {
+  const declaredArrayNames = new Set();
+  collectDeclaredArrayNames(program, declaredArrayNames);
+  return [...declaredArrayNames];
+}
+
+function syncArrayOptions(selectEl, preferredName) {
+  const previousValue = preferredName ?? selectEl.value;
+
+  const names = getDeclaredArrayNames();
+  selectEl.innerHTML = "";
+
+  for (const name of names) {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    selectEl.appendChild(option);
+  }
+
+  if (previousValue && names.includes(previousValue)) {
+    selectEl.value = previousValue;
+    return previousValue;
+  }
+
+  if (names.length > 0) {
+    selectEl.value = names[0];
     return names[0];
   }
 
@@ -488,6 +553,125 @@ function makeVarGetView(blockModel) {
   makeDragStart(blockModel, blockEl);
 
   const blockView = { blockEl, selectEl, errorBoxEl };
+  viewById.set(blockModel.id, blockView);
+  return blockView;
+}
+
+function makeArrayDeclView(blockModel) {
+  const blockEl = document.createElement("div");
+  blockEl.className = "blockSuccess";
+  blockEl.draggable = true;
+
+  const labelEl = document.createElement("span");
+  label.textContent = "array ";
+
+  const nameInputEl = document.createElement("input");
+  nameInputEl.placeholder = "arr";
+
+  const openBracketEl = document.createElement("span");
+  openBracketEl.textContent = "[";
+
+  const sizeInputEl = document.createElement("input");
+  sizeInputEl.placeholder = "5";
+
+  const closeBracketEl = document.createElement("span");
+  closeBracketEl.textContent = "]";
+
+  const errorBoxEl = makeErrorBox();
+
+  blockEl.appendChild(labelEl);
+  blockEl.appendChild(nameInputEl);
+  blockEl.appendChild(openBracketEl);
+  blockEl.appendChild(sizeInputEl);
+  blockEl.appendChild(closeBracketEl);
+  blockEl.appendChild(errorBoxEl);
+
+  nameInputEl.addEventListener("input", function () {
+    blockModel.name = nameInputEl.value.trim();
+    validateAndRender();
+  });
+
+  sizeInputEl.addEventListener("input", function () {
+    blockModel.size = sizeInputEl.value;
+    validateAndRender();
+  });
+
+  makeDragStart(blockModel, blockEl);
+
+  const blockView = { blockEl, nameInputEl, sizeInputEl, errorBoxEl };
+  viewById.set(blockModel.id, blockView);
+  return blockView;
+}
+
+function makeArrayGetView(blockModel) {
+  const blockEl = document.createElement("div");
+  blockEl.className = "blockSuccess";
+  blockEl.draggable = true;
+
+  const selectEl = document.createElement("select");
+
+  const openBracketEl = document.createElement("span");
+  openBracketEl.textContent = "[";
+
+  const indexView = makeOperandView(blockModel.index, blockModel, "index");
+
+  const closeBracketEl = document.createElement("span");
+  closeBracketEl.textContent = "]";
+
+  const errorBoxEl = makeErrorBox();
+
+  blockEl.appendChild(selectEl);
+  blockEl.appendChild(openBracketEl);
+  blockEl.appendChild(indexView.rootEl);
+  blockEl.appendChild(closeBracketEl);
+  blockEl.appendChild(errorBoxEl);
+
+  selectEl.addEventListener("change", function () {
+    blockModel.arrayName = selectEl.value;
+    validateAndRender();
+  });
+
+  makeDragStart(blockModel, blockEl);
+
+  const blockView = { blockEl, selectEl, indexView, errorBoxEl };
+  viewById.set(blockModel.id, blockView);
+  return blockView;
+}
+
+function makeArraySetView(blockModel) {
+  const blockEl = document.createElement("div");
+  blockEl.className = "blockSuccess";
+  blockEl.draggable = true;
+
+  const selectEl = document.createElement("select");
+
+  const openBracketEl = document.createElement("span");
+  openBracketEl.textContent = "[";
+
+  const indexView = makeOperandView(blockModel.index, blockModel, "index");
+
+  const closeBracketEl = document.createElement("span");
+  closeBracketEl.textContent = "]";
+
+  const valueView = makeOperandView(blockModel.value, blockModel, "value");
+
+  const errorBoxEl = makeErrorBox();
+
+  blockEl.appendChild(selectEl);
+  blockEl.appendChild(openBracketEl);
+  blockEl.appendChild(indexView.rootEl);
+  blockEl.appendChild(closeBracketEl);
+  blockEl.appendChild(valueView.rootEl);
+  blockEl.appendChild(errorBoxEl);
+
+  selectEl.addEventListener("change", function () {
+    blockModel.arrayName = selectEl.value;
+    validateAndRender();
+  });
+
+  makeDragStart(blockModel, blockEl);
+
+  const blockView = { blockEl, selectEl, indexView, valueView, errorBoxEl };
   viewById.set(blockModel.id, blockView);
   return blockView;
 }
