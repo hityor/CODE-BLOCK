@@ -3,7 +3,6 @@ import { Views } from "./blocksView.js";
 class OperandModel {
   constructor() {
     this.value = "";
-    this.variable = "";
   }
 }
 
@@ -15,9 +14,9 @@ class BlockModel {
     this.errors = [];
     this.isStatement = false;
     this.isExpression = false;
-  }
 
-  getView() {}
+    this.getView = Views[`${this.type}View`];
+  }
 
   getAllChildren() {
     const children = [];
@@ -48,6 +47,11 @@ class BlockModel {
   removeFromParent(parent) {
     if (!parent) return false;
 
+    if (parent.conditionChild === this) {
+      parent.conditionChild = null;
+      return true;
+    }
+
     if (Array.isArray(parent.children)) {
       const idx = parent.children.indexOf(this);
       if (idx !== -1) {
@@ -66,6 +70,45 @@ class BlockModel {
 
     return false;
   }
+  serialize() {
+    const obj = {
+      id: this.id,
+      type: this.type,
+    };
+
+    for (const key of Object.keys(this)) {
+      if (
+        key === "id" ||
+        key === "type" ||
+        key === "getView" ||
+        typeof this[key] === "function"
+      )
+        continue;
+
+      const value = this[key];
+
+      if (value instanceof BlockModel) {
+        obj[key] = value.serialize();
+      } else if (Array.isArray(value)) {
+        obj[key] = value.map((item) =>
+          item instanceof BlockModel ? item.serialize() : item,
+        );
+      } else if (
+        value &&
+        value.constructor &&
+        value.constructor.name === "OperandModel"
+      ) {
+        obj[key] = {
+          value: value.value,
+          variable: value.variable,
+        };
+      } else {
+        obj[key] = value;
+      }
+    }
+
+    return obj;
+  }
 }
 
 class VarDeclModel extends BlockModel {
@@ -73,7 +116,6 @@ class VarDeclModel extends BlockModel {
     super("varDecl");
     this.isStatement = true;
     this.rawNames = "";
-    this.getView = Views.varDeclView;
   }
 }
 
@@ -83,7 +125,6 @@ class AssignModel extends BlockModel {
     this.isStatement = true;
     this.variable = "";
     this.expression = new OperandModel();
-    this.getView = Views.assignView;
   }
 }
 
@@ -92,7 +133,6 @@ class VarGetModel extends BlockModel {
     super("varGet");
     this.isExpression = true;
     this.variable = "";
-    this.getView = Views.varGetView;
   }
 }
 
@@ -102,7 +142,6 @@ class ArrayDeclModel extends BlockModel {
     this.isStatement = true;
     this.name = "";
     this.size = "";
-    this.getView = Views.arrayDeclView;
   }
 }
 
@@ -112,7 +151,6 @@ class ArrayGetModel extends BlockModel {
     this.isExpression = true;
     this.arrayName = "";
     this.index = new OperandModel();
-    this.getView = Views.arrayGetView;
   }
 }
 
@@ -123,7 +161,6 @@ class ArraySetModel extends BlockModel {
     this.arrayName = "";
     this.index = new OperandModel();
     this.value = new OperandModel();
-    this.getView = Views.arraySetView;
   }
 }
 
@@ -134,7 +171,6 @@ class ArithmeticModel extends BlockModel {
     this.operator = "+";
     this.left = new OperandModel();
     this.right = new OperandModel();
-    this.getView = Views.arithmeticView;
   }
 }
 
@@ -144,7 +180,6 @@ class CompareModel extends BlockModel {
     this.operator = ">";
     this.left = new OperandModel();
     this.right = new OperandModel();
-    this.getView = Views.compareView;
   }
 }
 
@@ -155,7 +190,6 @@ class IfModel extends BlockModel {
     this.conditionChild = null;
     this.elseChildren = [];
     this.isStatement = true;
-    this.getView = Views.ifView;
   }
 }
 
@@ -164,7 +198,6 @@ class WhileModel extends BlockModel {
     super("while");
     this.isStatement = true;
     this.conditionChild = null;
-    this.getView = Views.whileView;
   }
 }
 
@@ -201,7 +234,7 @@ export class Program {
     );
   }
 
-  createBlockByType(blockType) {
+  createBlockByType(blockType, assignId = true) {
     let newBlockModel;
     switch (blockType) {
       case "varDecl":
@@ -237,10 +270,46 @@ export class Program {
       default:
         newBlockModel = null;
     }
-
-    if (newBlockModel) newBlockModel.id = this.generateId();
-
+    if (newBlockModel && assignId) {
+      newBlockModel.id = this.generateId();
+    }
     return newBlockModel;
+  }
+
+  serialize() {
+    return {
+      nextId: this.nextId,
+      children: this.children.map((child) => child.serialize()),
+    };
+  }
+
+  deserialize(data) {
+    this.nextId = data.nextId;
+    this.children = data.children
+      .map((childData) => this.deserializeBlock(childData))
+      .filter(Boolean);
+  }
+
+  deserializeBlock(data) {
+    if (!data) return null;
+    const block = this.createBlockByType(data.type, false);
+    if (!block) return null;
+
+    for (const [key, value] of Object.entries(data)) {
+      if (key === "type" || key === "id" || key === "getView") continue;
+
+      if (value.type) {
+        block[key] = this.deserializeBlock(value);
+      } else if (Array.isArray(value)) {
+        block[key] = value
+          .map((item) =>
+            item && item.type ? this.deserializeBlock(item) : item,
+          )
+          .filter(Boolean);
+      } else block[key] = value;
+    }
+
+    return block;
   }
 
   normalizeIndex(index, length) {

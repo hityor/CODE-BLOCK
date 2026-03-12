@@ -99,7 +99,7 @@ export const Views = {
     return blockView;
   },
 
-  arithmeticView() {
+  arithView() {
     const blockEl = document.createElement("div");
     blockEl.className = "blockSuccess";
     blockEl.draggable = true;

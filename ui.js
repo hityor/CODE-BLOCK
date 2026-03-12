@@ -78,7 +78,7 @@ runBtn.addEventListener("click", function () {
 });
 
 saveBtn.addEventListener("click", function () {
-  const programJSON = JSON.stringify(program, null, 2);
+  const programJSON = JSON.stringify(program.serialize(), null, 2);
   const programFile = new Blob([programJSON], { type: "application/json" });
   const fileDownloadURl = URL.createObjectURL(programFile);
 
@@ -99,15 +99,15 @@ loadBtn.addEventListener("click", function () {
 
 fileInput.addEventListener("change", (e) => {
   const file = e.target.files[0];
-
   if (!file) return;
 
   const reader = new FileReader();
 
   reader.onload = (e) => {
     const loadedProgramJSON = e.target.result;
-    program.children = JSON.parse(loadedProgramJSON).children;
-    program.nextId = JSON.parse(loadedProgramJSON).nextId;
+    const loadedData = JSON.parse(loadedProgramJSON);
+
+    program.deserialize(loadedData);
 
     viewById.clear();
     programCanvasEl.innerHTML = "";

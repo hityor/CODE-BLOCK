@@ -165,10 +165,8 @@ export class DnD {
   makeConditionDropZone(zone, parent) {
     zone.addEventListener("dragover", (e) => {
       e.preventDefault();
-
       const data = e.dataTransfer.getData("text/plain");
       if (!data) return;
-
       if (data.startsWith("add:")) {
         const blockType = data.split(":")[1];
         if (blockType === "compare") {
@@ -182,7 +180,6 @@ export class DnD {
     zone.addEventListener("drop", (e) => {
       e.preventDefault();
       e.stopPropagation();
-
       const data = e.dataTransfer.getData("text/plain");
       if (!data) return;
 
@@ -191,6 +188,22 @@ export class DnD {
         if (blockType !== "compare") return;
 
         parent.conditionChild = program.createBlockByType(blockType);
+        validateAndRender();
+      } else if (data.startsWith("move:")) {
+        const blockId = parseInt(data.split(":")[1], 10);
+        const location = program.findBlockWithParentById(blockId);
+
+        if (!location) return;
+
+        const { blockModel } = location;
+
+        if (blockModel.type !== "compare") return;
+
+        if (blockModel.hasDescendant(parent.id)) return;
+
+        blockModel.removeFromParent(location.parentBlockModel);
+
+        parent.conditionChild = blockModel;
         validateAndRender();
       }
     });
