@@ -19,7 +19,7 @@ function collectDeclaredNames(containerModel, declaredNames) {
   if (Array.isArray(containerModel.elseChildren)) {
     for (const blockModel of containerModel.elseChildren) {
       if (blockModel.type === "varDecl") {
-        for (const name of parseNames(blockModel)) {
+        for (const name of parseNames(blockModel, rawName)) {
           if (isValidVarName(name)) declaredNames.add(name);
         }
       }

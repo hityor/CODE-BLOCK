@@ -239,5 +239,9 @@ export function runProgram(
     renderMemory(mem, memoryView),
   );
 
-  executer.run();
+  try {
+    executer.run();
+  } catch (e) {
+    appendLogs(e.message);
+  }
 }

@@ -290,7 +290,11 @@ class Executer {
         this.instrId = 0;
     }
     run() {
+        let steps = 0;
         while (this.instrId < this.instructions.length) {
+            if (steps++ > 10000) {
+                throw new Error("Возможно бесконечный цикл");
+            }
             const instr = this.instructions[this.instrId];
             const token = instr.token;
             if (token in this.binaryOperations) {
