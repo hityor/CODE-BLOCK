@@ -1,4 +1,4 @@
-import { program } from "./state.js";
+import { program } from "./program.js";
 import { validateAndRender } from "./ui.js";
 
 export class DnD {
@@ -112,27 +112,24 @@ export class DnD {
     });
   }
 
-  makeExpressionDragOver(e) {
+  makeExpressionDragOver(e, parent, operandType) {
     e.preventDefault();
-
     const data = e.dataTransfer.getData("text/plain");
     if (!data) return;
 
     if (data.startsWith("add:")) {
       const blockType = data.split(":")[1];
-      if (
-        blockType === "arith" ||
-        blockType === "varGet" ||
-        blockType === "arrayGet"
-      )
+      if (program.canInsertBlockType(blockType, parent, operandType)) {
         e.dataTransfer.dropEffect = "copy";
+      }
     } else if (data.startsWith("move:")) {
       e.dataTransfer.dropEffect = "move";
     }
   }
-
   makeExpressionDropZone(zone, parent, operandType) {
-    zone.addEventListener("dragover", (e) => this.makeExpressionDragOver(e));
+    zone.addEventListener("dragover", (e) =>
+      this.makeExpressionDragOver(e, parent, operandType),
+    );
 
     zone.addEventListener("drop", (e) => {
       e.preventDefault();
@@ -144,13 +141,9 @@ export class DnD {
       if (data.startsWith("add:")) {
         const blockType = data.split(":")[1];
 
-        if (
-          blockType === "arith" ||
-          blockType === "varGet" ||
-          blockType === "arrayGet"
-        ) {
+        // Проверяем, можно ли вставить этот тип блока в данный слот
+        if (program.canInsertBlockType(blockType, parent, operandType)) {
           const newBlock = program.createBlockByType(blockType);
-
           program.insertChildIntoParent(parent, newBlock, operandType);
           validateAndRender();
         }
@@ -169,7 +162,7 @@ export class DnD {
       if (!data) return;
       if (data.startsWith("add:")) {
         const blockType = data.split(":")[1];
-        if (blockType === "compare") {
+        if (program.isLogicalBlockType(blockType)) {
           e.dataTransfer.dropEffect = "copy";
         }
       } else if (data.startsWith("move:")) {
@@ -185,24 +178,23 @@ export class DnD {
 
       if (data.startsWith("add:")) {
         const blockType = data.split(":")[1];
-        if (blockType !== "compare") return;
+        if (!program.isLogicalBlockType(blockType)) return;
 
+        if (parent.conditionChild) {
+          parent.conditionChild = null;
+        }
         parent.conditionChild = program.createBlockByType(blockType);
         validateAndRender();
       } else if (data.startsWith("move:")) {
         const blockId = parseInt(data.split(":")[1], 10);
         const location = program.findBlockWithParentById(blockId);
-
         if (!location) return;
-
         const { blockModel } = location;
-
-        if (blockModel.type !== "compare") return;
-
+        if (!program.isLogicalBlockType(blockModel.type)) return;
         if (blockModel.hasDescendant(parent.id)) return;
 
+        if (parent.conditionChild) parent.conditionChild = null;
         blockModel.removeFromParent(location.parentBlockModel);
-
         parent.conditionChild = blockModel;
         validateAndRender();
       }

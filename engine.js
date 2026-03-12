@@ -39,20 +39,37 @@ function expressionFromTarget(childBlock, operandModel) {
   return operandToAst(operandModel);
 }
 
-function buildConditionFromBlock(block) {
+function buildLogicalExprFromBlock(block) {
   if (block.type === "compare") {
     const left = block.children[0]
       ? buildExprFromBlock(block.children[0])
       : operandToAst(block.left);
-
     const right = block.children[1]
       ? buildExprFromBlock(block.children[1])
       : operandToAst(block.right);
-
     return new CompareExpr(block.operator, left, right);
   }
-
-  throw new Error("Неподдерживаемый блок условия: " + block.type);
+  if (block.type === "boolean") {
+    return new BooleanLiteral(block.value);
+  }
+  if (block.type === "logic") {
+    const left = block.children[0]
+      ? buildLogicalExprFromBlock(block.children[0])
+      : null;
+    const right = block.children[1]
+      ? buildLogicalExprFromBlock(block.children[1])
+      : null;
+    if (!left || !right) throw new Error("Missing operand in logic block");
+    return new LogicalExpr(block.operator, left, right);
+  }
+  if (block.type === "not") {
+    const operand = block.children[0]
+      ? buildLogicalExprFromBlock(block.children[0])
+      : null;
+    if (!operand) throw new Error("Missing operand in not block");
+    return new LogicalNotExpr(operand);
+  }
+  throw new Error("Unsupported logical block type: " + block.type);
 }
 
 function buildStatements(blocks) {
@@ -99,7 +116,7 @@ function buildStatements(blocks) {
     }
 
     if (block.type === "if") {
-      const condition = buildConditionFromBlock(block.conditionChild);
+      const condition = buildLogicalExprFromBlock(block.conditionChild);
       const thenBody = new BlockStatement(buildStatements(block.children));
 
       const elseBody =
@@ -112,7 +129,7 @@ function buildStatements(blocks) {
     }
 
     if (block.type === "while") {
-      const condition = buildConditionFromBlock(block.conditionChild);
+      const condition = buildLogicalExprFromBlock(block.conditionChild);
       const body = new BlockStatement(buildStatements(block.children));
 
       statements.push(new WhileStatement(condition, body));
@@ -178,6 +195,19 @@ function hasAnyErrorsInBlock(block) {
     for (const child of block.children) {
       if (hasAnyErrorsInBlock(child)) return true;
     }
+  }
+
+  if (block.type === "logic") {
+    if (block.children[0] && hasAnyErrorsInBlock(block.children[0]))
+      return true;
+    if (block.children[1] && hasAnyErrorsInBlock(block.children[1]))
+      return true;
+  }
+  if (block.type === "not") {
+    if (block.children[0] && hasAnyErrorsInBlock(block.children[0]))
+      return true;
+  }
+  if (block.type === "boolean") {
   }
 
   return false;

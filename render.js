@@ -1,6 +1,6 @@
-import { program } from "./state.js";
+import { program } from "./program.js";
 import { programCanvasEl } from "./ui.js";
-import { viewById } from "./blocksView.js";
+import { viewById } from "./blockViews.js";
 import { parseNames, isValidVarName } from "./utils.js";
 
 function collectDeclaredNames(containerModel, declaredNames) {
@@ -137,8 +137,10 @@ function reorderChildren(containerEl, orderedChildEls) {
 }
 
 function renderOperandView(operandModel, operandView, childBlockModel) {
-  if (operandView.literalInputEl.value !== operandModel.value) {
-    operandView.literalInputEl.value = operandModel.value;
+  if (operandView.literalInputEl) {
+    if (operandView.literalInputEl.value !== operandModel.value) {
+      operandView.literalInputEl.value = operandModel.value;
+    }
   }
 
   const currentChildEl = operandView.childSlotEl.firstElementChild;
@@ -146,7 +148,9 @@ function renderOperandView(operandModel, operandView, childBlockModel) {
   if (childBlockModel) {
     renderBlockShell(childBlockModel);
     renderBlockBody(childBlockModel);
-    operandView.literalInputEl.style.display = "none";
+    if (operandView.literalInputEl) {
+      operandView.literalInputEl.style.display = "none";
+    }
 
     const expectedChildEl = viewById.get(childBlockModel.id).blockEl;
     if (currentChildEl !== expectedChildEl) {
@@ -154,7 +158,9 @@ function renderOperandView(operandModel, operandView, childBlockModel) {
       operandView.childSlotEl.appendChild(expectedChildEl);
     }
   } else {
-    operandView.literalInputEl.style.display = "";
+    if (operandView.literalInputEl) {
+      operandView.literalInputEl.style.display = "";
+    }
     if (currentChildEl) {
       operandView.childSlotEl.innerHTML = "";
     }
@@ -266,6 +272,19 @@ function renderBlockBody(blockModel) {
 
     renderCustomStatementList(blockModel.children, blockView.bodyCanvasEl);
   }
+
+  if (blockModel.type === "logic") {
+    renderOperandView(null, blockView.leftOperandView, blockModel.children[0]);
+    renderOperandView(null, blockView.rightOperandView, blockModel.children[1]);
+    return;
+  }
+  if (blockModel.type === "not") {
+    renderOperandView(null, blockView.operandView, blockModel.children[0]);
+    return;
+  }
+  if (blockModel.type === "boolean") {
+    return;
+  }
 }
 
 function renderStatementList(containerModel, listEl) {
@@ -308,9 +327,9 @@ function renderBlockShell(blockModel) {
       blockView.selectEl,
       blockModel.variable,
     );
-  } else if (blockModel.type === "arith") {
+  } else if (blockModel.type === "arith")
     blockView.operatorEl.value = blockModel.operator;
-  } else if (blockModel.type === "varGet") {
+  else if (blockModel.type === "varGet") {
     blockModel.variable = syncVariableOptions(
       blockView.selectEl,
       blockModel.variable,
@@ -328,8 +347,13 @@ function renderBlockShell(blockModel) {
       blockView.selectEl,
       blockModel.arrayName,
     );
-  } else if (blockModel.type === "compare") {
+  } else if (blockModel.type === "compare")
     blockView.operatorEl.value = blockModel.operator;
+  else if (blockModel.type === "boolean")
+    blockView.selectEl.value = blockModel.value ? "true" : "false";
+  else if (blockModel.type === "logic")
+    blockView.operatorEl.value = blockModel.operator;
+  else if (blockModel.type === "not") {
   }
 
   if (blockModel.errors.length > 0) {

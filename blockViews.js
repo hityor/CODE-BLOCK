@@ -39,6 +39,15 @@ function makeOperandView(operandModel, parentBlockModel, operandType) {
   return { rootEl, literalInputEl, childSlotEl };
 }
 
+function makeLogicOperandView(parentBlockModel, operandType) {
+  const rootEl = document.createElement("div");
+  rootEl.className = "operandBlock";
+  dnd.makeExpressionDropZone(rootEl, parentBlockModel, operandType);
+  const childSlotEl = document.createElement("div");
+  rootEl.appendChild(childSlotEl);
+  return { rootEl, childSlotEl };
+}
+
 export const Views = {
   varDeclView() {
     const blockEl = document.createElement("div");
@@ -421,6 +430,93 @@ export const Views = {
       conditionSlotEl,
       bodyCanvasEl,
     };
+    viewById.set(this.id, blockView);
+    return blockView;
+  },
+
+  booleanView() {
+    const blockEl = document.createElement("div");
+    blockEl.className = "blockSuccess";
+    blockEl.draggable = true;
+
+    const selectEl = document.createElement("select");
+    selectEl.innerHTML = `
+    <option value="true">true</option>
+    <option value="false">false</option>
+  `;
+    const errorBoxEl = makeErrorBox();
+
+    blockEl.appendChild(selectEl);
+    blockEl.appendChild(errorBoxEl);
+
+    selectEl.addEventListener("change", () => {
+      this.value = selectEl.value === "true";
+      validateAndRender();
+    });
+
+    makeDragStart(this, blockEl);
+
+    const blockView = { blockEl, selectEl, errorBoxEl };
+    viewById.set(this.id, blockView);
+    return blockView;
+  },
+
+  logicView() {
+    const blockEl = document.createElement("div");
+    blockEl.className = "blockSuccess";
+    blockEl.draggable = true;
+
+    const leftOperandView = makeLogicOperandView(this, "left");
+    const operatorEl = document.createElement("select");
+    operatorEl.className = "exprOperator";
+    operatorEl.innerHTML = `
+    <option value="&&">AND</option>
+    <option value="||">OR</option>
+  `;
+    const rightOperandView = makeLogicOperandView(this, "right");
+    const errorBoxEl = makeErrorBox();
+
+    blockEl.appendChild(leftOperandView.rootEl);
+    blockEl.appendChild(operatorEl);
+    blockEl.appendChild(rightOperandView.rootEl);
+    blockEl.appendChild(errorBoxEl);
+
+    operatorEl.addEventListener("change", () => {
+      this.operator = operatorEl.value;
+      validateAndRender();
+    });
+
+    makeDragStart(this, blockEl);
+
+    const blockView = {
+      blockEl,
+      errorBoxEl,
+      operatorEl,
+      leftOperandView,
+      rightOperandView,
+    };
+    viewById.set(this.id, blockView);
+    return blockView;
+  },
+
+  notView() {
+    const blockEl = document.createElement("div");
+    blockEl.className = "blockSuccess";
+    blockEl.draggable = true;
+
+    const spanEl = document.createElement("span");
+    spanEl.textContent = "NOT";
+
+    const operandView = makeLogicOperandView(this, "operand");
+    const errorBoxEl = makeErrorBox();
+
+    blockEl.appendChild(spanEl);
+    blockEl.appendChild(operandView.rootEl);
+    blockEl.appendChild(errorBoxEl);
+
+    makeDragStart(this, blockEl);
+
+    const blockView = { blockEl, errorBoxEl, operandView };
     viewById.set(this.id, blockView);
     return blockView;
   },

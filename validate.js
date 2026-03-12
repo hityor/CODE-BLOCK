@@ -21,6 +21,62 @@ function validateIntegerOperand(operandModel, errors, operandSide) {
   }
 }
 
+function validateBoolean(blockModel, errors) {
+  if (blockModel.value === undefined) {
+    errors.push("Значение не выбрано");
+  }
+}
+
+function validateLogic(blockModel, declared, errorsById, errors) {
+  if (
+    !blockModel.operator ||
+    (blockModel.operator !== "&&" && blockModel.operator !== "||")
+  ) {
+    errors.push("Неизвестный логический оператор");
+  }
+  if (blockModel.children[0]) {
+    validateLogicalExpression(blockModel.children[0], declared, errorsById);
+  } else {
+    errors.push("Левый операнд отсутствует");
+  }
+  if (blockModel.children[1]) {
+    validateLogicalExpression(blockModel.children[1], declared, errorsById);
+  } else {
+    errors.push("Правый операнд отсутствует");
+  }
+}
+
+function validateNot(blockModel, declared, errorsById, errors) {
+  if (blockModel.children[0]) {
+    validateLogicalExpression(blockModel.children[0], declared, errorsById);
+  } else {
+    errors.push("Операнд отсутствует");
+  }
+}
+
+function validateLogicalExpression(blockModel, declared, errorsById) {
+  if (blockModel.type === "compare") {
+    validateCompare(blockModel, declared, errorsById);
+  } else if (blockModel.type === "boolean") {
+    const errors = [];
+    validateBoolean(blockModel, errors);
+    errorsById.set(blockModel.id, errors);
+  } else if (blockModel.type === "logic") {
+    const errors = [];
+    validateLogic(blockModel, declared, errorsById, errors);
+    errorsById.set(blockModel.id, errors);
+  } else if (blockModel.type === "not") {
+    const errors = [];
+    validateNot(blockModel, declared, errorsById, errors);
+    errorsById.set(blockModel.id, errors);
+  } else {
+    const errors = [
+      `Блок "${blockModel.type}" нельзя использовать как логическое выражение`,
+    ];
+    errorsById.set(blockModel.id, errors);
+  }
+}
+
 function validateOperand(
   childBlock,
   operandModel,
@@ -38,6 +94,18 @@ function validateOperand(
 
 function validateExpressionBlock(blockModel, declared, errorsById) {
   const errors = [];
+
+  if (
+    blockModel.type === "boolean" ||
+    blockModel.type === "logic" ||
+    blockModel.type === "not"
+  ) {
+    errors.push(
+      `Блок "${blockModel.type}" нельзя использовать в арифметическом выражении`,
+    );
+    errorsById.set(blockModel.id, errors);
+    return;
+  }
 
   if (blockModel.type === "varGet") {
     if (!blockModel.variable) {
@@ -248,7 +316,7 @@ function validateIf(blockModel, declared, errorsById, errors) {
   if (!blockModel.conditionChild) {
     errors.push("Условие не задано");
   } else {
-    validateCompare(blockModel.conditionChild, declared, errorsById);
+    validateLogicalExpression(blockModel.conditionChild, declared, errorsById);
   }
 
   for (const child of blockModel.children) {
@@ -264,7 +332,7 @@ function validateWhile(blockModel, declared, errorsById, errors) {
   if (!blockModel.conditionChild) {
     errors.push("Условие не задано");
   } else {
-    validateCompare(blockModel.conditionChild, declared, errorsById);
+    validateLogicalExpression(blockModel.conditionChild, declared, errorsById);
   }
 
   for (const child of blockModel.children) {

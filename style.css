@@ -173,6 +173,8 @@ select {
   border: 1px dashed #9ca3af;
   border-radius: 6px;
   background: #ffffff;
+  min-width: 60px;
+  min-height: 32px;
 }
 
 .operandBlock input,

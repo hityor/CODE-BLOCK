@@ -1,5 +1,5 @@
-import { program } from "./state.js";
-import { viewById } from "./blocksView.js";
+import { program } from "./program.js";
+import { viewById } from "./blockViews.js";
 import { validateProgram } from "./validate.js";
 import { renderProgram } from "./render.js";
 import { runProgram } from "./engine.js";
