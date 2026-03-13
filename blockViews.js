@@ -373,6 +373,9 @@ export const Views = {
     headerEl.appendChild(conditionSlotEl);
     headerEl.appendChild(thenLabelEl);
 
+    const errorBoxEl = makeErrorBox();
+    headerEl.appendChild(errorBoxEl);
+
     const thenCanvasEl = document.createElement("div");
     thenCanvasEl.className = "whileIfBodyCanvas";
     dnd.makeDropZone(thenCanvasEl, this);
@@ -384,13 +387,10 @@ export const Views = {
     elseCanvasEl.className = "whileIfBodyCanvas";
     dnd.makeElseDropZone(elseCanvasEl, this);
 
-    const errorBoxEl = makeErrorBox();
-
     blockEl.appendChild(headerEl);
     blockEl.appendChild(thenCanvasEl);
     blockEl.appendChild(elseLabelEl);
     blockEl.appendChild(elseCanvasEl);
-    blockEl.appendChild(errorBoxEl);
 
     makeDragStart(this, blockEl);
 
@@ -427,15 +427,15 @@ export const Views = {
     headerEl.appendChild(conditionSlotEl);
     headerEl.appendChild(doLabelEl);
 
+    const errorBoxEl = makeErrorBox();
+    headerEl.appendChild(errorBoxEl);
+
     const bodyCanvasEl = document.createElement("div");
     bodyCanvasEl.className = "whileIfBodyCanvas";
     dnd.makeDropZone(bodyCanvasEl, this);
 
-    const errorBoxEl = makeErrorBox();
-
     blockEl.appendChild(headerEl);
     blockEl.appendChild(bodyCanvasEl);
-    blockEl.appendChild(errorBoxEl);
 
     makeDragStart(this, blockEl);
 
