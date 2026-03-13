@@ -12,7 +12,8 @@ const loadBtn = document.getElementById("loadBtn");
 const fileInput = document.getElementById("fileInput");
 const clearCanvasBtn = document.getElementById("clearCanvasBtn");
 const trashZone = document.getElementById("trashZone");
-const memoryView = document.getElementById("logContent");
+const logView = document.getElementById("logContent");
+const memoryView = document.getElementById("memoryContent");
 export const dnd = new DnD();
 
 function getChildBlocks(blockModel) {
@@ -123,6 +124,7 @@ clearCanvasBtn.addEventListener("click", () => {
   program.children = [];
   program.nextId = 1;
   memoryView.innerHTML = "";
+  viewById.clear();
   validateAndRender();
 });
 
@@ -139,6 +141,8 @@ export function validateAndRender() {
 }
 
 function renderMemory(memory, memoryView) {
+  memoryView.innerHTML = "";
+
   for (const [varName, varValue] of memory) {
     const item = document.createElement("div");
     item.innerHTML = `<b>${varName}</b>: <b>${varValue}</b>`;
@@ -150,8 +154,10 @@ function appendLogs(...texts) {
   for (const text of texts) {
     const item = document.createElement("div");
     item.innerHTML = text;
-    memoryView.appendChild(item);
+    logView.appendChild(item);
   }
+
+  logView.scrollTop = logView.scrollHeight;
 }
 
 export function initUI() {

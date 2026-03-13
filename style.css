@@ -67,11 +67,35 @@ body {
   border-color: #dc2626;
 }
 
-#logContent {
+.rightPanel {
+  background: #f1f1f2;
+  border-left: 1px solid #c6c6c6;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 12px;
+}
+
+.sideSection {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.sideSection h3 {
+  margin: 0 0 8px 0;
+}
+
+.sideContent {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding-right: 4px;
+  padding: 8px;
+  border: 1px solid #c6c6c6;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 button {
