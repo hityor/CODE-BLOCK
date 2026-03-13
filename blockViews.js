@@ -13,6 +13,17 @@ function makeDragStart(blockModel, blockEl) {
 function makeErrorBox() {
   const errorBox = document.createElement("div");
   errorBox.className = "errorBox";
+  errorBox.style.display = "none";
+
+  const icon = document.createElement("span");
+  icon.textContent = "!";
+
+  const tooltip = document.createElement("div");
+  tooltip.className = "errorTooltip";
+
+  errorBox.appendChild(icon);
+  errorBox.appendChild(tooltip);
+
   return errorBox;
 }
 
@@ -51,7 +62,7 @@ function makeLogicOperandView(parentBlockModel, operandType) {
 export const Views = {
   varDeclView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const typeEl = document.createElement("span");
@@ -81,7 +92,7 @@ export const Views = {
 
   assignView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const selectEl = document.createElement("select");
@@ -110,7 +121,7 @@ export const Views = {
 
   arithView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const leftOperandView = makeOperandView(this.left, this, "left");
@@ -152,7 +163,7 @@ export const Views = {
 
   varGetView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const selectEl = document.createElement("select");
@@ -175,7 +186,7 @@ export const Views = {
 
   arrayDeclView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const labelEl = document.createElement("span");
@@ -221,7 +232,7 @@ export const Views = {
 
   arrayGetView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const selectEl = document.createElement("select");
@@ -256,7 +267,7 @@ export const Views = {
 
   arraySetView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const selectEl = document.createElement("select");
@@ -269,6 +280,9 @@ export const Views = {
     const closeBracketEl = document.createElement("span");
     closeBracketEl.textContent = "]";
 
+    const equalsEl = document.createElement("span");
+    equalsEl.textContent = " = ";
+
     const valueView = makeOperandView(this.value, this, "value");
 
     const errorBoxEl = makeErrorBox();
@@ -277,6 +291,7 @@ export const Views = {
     blockEl.appendChild(openBracketEl);
     blockEl.appendChild(indexView.rootEl);
     blockEl.appendChild(closeBracketEl);
+    blockEl.appendChild(equalsEl);
     blockEl.appendChild(valueView.rootEl);
     blockEl.appendChild(errorBoxEl);
 
@@ -294,7 +309,7 @@ export const Views = {
 
   compareView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const leftOperandView = makeOperandView(this.left, this, "left");
@@ -338,7 +353,7 @@ export const Views = {
 
   ifView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const headerEl = document.createElement("div");
@@ -392,7 +407,7 @@ export const Views = {
 
   whileView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const headerEl = document.createElement("div");
@@ -436,7 +451,7 @@ export const Views = {
 
   booleanView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const selectEl = document.createElement("select");
@@ -463,7 +478,7 @@ export const Views = {
 
   logicView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const leftOperandView = makeLogicOperandView(this, "left");
@@ -501,7 +516,7 @@ export const Views = {
 
   notView() {
     const blockEl = document.createElement("div");
-    blockEl.className = "blockSuccess";
+    blockEl.className = "block blockSuccess";
     blockEl.draggable = true;
 
     const spanEl = document.createElement("span");

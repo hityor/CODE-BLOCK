@@ -362,11 +362,17 @@ function renderBlockShell(blockModel) {
   }
 
   if (blockModel.errors.length > 0) {
-    blockView.errorBoxEl.textContent = blockModel.errors.join(", ");
-    blockView.blockEl.className = "blockError";
+    const tooltip = blockView.errorBoxEl.querySelector(".errorTooltip");
+    tooltip.textContent = blockModel.errors.join("\n");
+
+    blockView.errorBoxEl.style.display = "inline-flex";
+    blockView.blockEl.className = "block blockError";
   } else {
-    blockView.errorBoxEl.textContent = "";
-    blockView.blockEl.className = "blockSuccess";
+    const tooltip = blockView.errorBoxEl.querySelector(".errorTooltip");
+    tooltip.textContent = "";
+
+    blockView.errorBoxEl.style.display = "none";
+    blockView.blockEl.className = "block blockSuccess";
   }
 }
 

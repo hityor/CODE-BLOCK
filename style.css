@@ -100,27 +100,70 @@ button:active {
   border-radius: 4px;
 }
 
-.blockError {
-  border: 1px solid #fca5a5;
-  background: #fef2f2;
-  color: #991b1b;
+.block {
   padding: 10px 12px;
   margin: 10px;
   border-radius: 8px;
+  border: 1px solid transparent;
 }
 
 .blockSuccess {
-  border: 1px solid #86efac;
-  background: #f0fdf4;
-  color: #14532d;
-  padding: 10px 12px;
-  margin: 10px;
-  border-radius: 8px;
+  border-color: #85efac;
+  background: #eefcf2;
+  color: #15562f;
+}
+
+.blockError {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #991b1b;
 }
 
 .errorBox {
-  padding: 5px;
-  margin: 10px 10px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+  height: 22px;
+  margin-left: 8px;
+
+  border-radius: 50%;
+  background: #d45454;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
+
+  cursor: help;
+  user-select: none;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.errorTooltip {
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  background: #111;
+  color: white;
+
+  padding: 6px 8px;
+  border-radius: 6px;
+
+  font-size: 12px;
+  white-space: pre;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.errorBox:hover .errorTooltip {
+  opacity: 1;
 }
 
 .canvas {
