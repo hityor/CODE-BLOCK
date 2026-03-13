@@ -138,10 +138,12 @@ function renderMemory(memory, memoryView) {
   }
 }
 
-function appendLogs(text) {
-  const item = document.createElement("div");
-  item.innerHTML = text;
-  memoryView.appendChild(item);
+function appendLogs(...texts) {
+  for (const text of texts) {
+    const item = document.createElement("div");
+    item.innerHTML = text;
+    memoryView.appendChild(item);
+  }
 }
 
 export function initUI() {

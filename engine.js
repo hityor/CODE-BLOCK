@@ -227,7 +227,10 @@ export function runProgram(
   render();
 
   if (program.children.some((block) => hasAnyErrorsInBlock(block))) {
-    appendLogs("В программе есть ошибки валидации");
+    appendLogs(
+      "В программе есть ошибки валидации",
+      "Исправьте ошибки перед запуском",
+    );
     return;
   }
 
@@ -242,6 +245,6 @@ export function runProgram(
   try {
     executer.run();
   } catch (e) {
-    appendLogs(e.message);
+    appendLogs("Ошибка выполнения программы:", e.message);
   }
 }
