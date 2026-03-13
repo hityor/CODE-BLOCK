@@ -199,4 +199,37 @@ export class DnD {
       }
     });
   }
+
+  makeTrashDropZone(zone) {
+    zone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+
+      const data = e.dataTransfer.getData("text/plain");
+      if (!data) return;
+
+      if (data.startsWith("move:")) {
+        e.dataTransfer.dropEffect = "move";
+        zone.classList.add("dragOver");
+      }
+    });
+
+    zone.addEventListener("dragleave", () => {
+      zone.classList.remove("dragOver");
+    });
+
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      zone.classList.remove("dragOver");
+
+      const data = e.dataTransfer.getData("text/plain");
+      if (!data || !data.startsWith("move:")) return;
+
+      const blockId = parseInt(data.split(":")[1], 10);
+      if (Number.isNaN(blockId)) return;
+
+      program.deleteBlock(blockId);
+      validateAndRender();
+    });
+  }
 }

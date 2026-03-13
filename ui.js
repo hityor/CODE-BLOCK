@@ -10,6 +10,7 @@ const runBtn = document.getElementById("runBtn");
 const saveBtn = document.getElementById("saveBtn");
 const loadBtn = document.getElementById("loadBtn");
 const fileInput = document.getElementById("fileInput");
+const trashZone = document.getElementById("trashZone");
 const memoryView = document.getElementById("logContent");
 export const dnd = new DnD();
 
@@ -145,6 +146,7 @@ function appendLogs(text) {
 
 export function initUI() {
   dnd.makeDropZone(programCanvasEl, program);
+  dnd.makeTrashDropZone(trashZone);
   validateAndStoreErrors();
   renderProgram(program, programCanvasEl);
 }

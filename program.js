@@ -182,6 +182,16 @@ class Program {
     return null;
   }
 
+  deleteBlock(blockId) {
+  const location = this.findBlockWithParentById(blockId);
+  if (!location) return false;
+
+  const { blockModel, parentBlockModel } = location;
+  if (!blockModel || !parentBlockModel) return false;
+
+  return blockModel.removeFromParent(parentBlockModel);
+}
+
   putBlock(parentBlock, blockType, addIndex) {
     if (!this.isStatementBlockType(blockType)) return;
 

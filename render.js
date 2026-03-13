@@ -133,6 +133,12 @@ function reorderChildren(containerEl, orderedChildEls) {
       containerEl.insertBefore(blockEl, cursor);
     }
   }
+
+  while (cursor) {
+    const next = cursor.nextSibling;
+    containerEl.removeChild(cursor);
+    cursor = next;
+  }
 }
 
 function renderOperandView(operandModel, operandView, childBlockModel) {
