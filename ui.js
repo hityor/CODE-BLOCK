@@ -123,8 +123,11 @@ fileInput.addEventListener("change", (e) => {
 clearCanvasBtn.addEventListener("click", () => {
   program.children = [];
   program.nextId = 1;
-  memoryView.innerHTML = "";
   viewById.clear();
+
+  memoryView.innerHTML = "";
+  logView.innerHTML = "";
+
   validateAndRender();
 });
 
