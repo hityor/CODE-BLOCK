@@ -22,11 +22,7 @@ export class Block {
     if (Array.isArray(this.children)) {
       for (const child of this.children) if (child) children.push(child);
     }
-
-    if (this.conditionChild) {
-      children.push(this.conditionChild);
-    }
-
+    if (this.conditionChild) children.push(this.conditionChild);
     if (Array.isArray(this.elseChildren)) {
       for (const child of this.elseChildren) if (child) children.push(child);
     }
@@ -64,7 +60,14 @@ export class Block {
         return true;
       }
     }
+    return false;
+    }
 
+  hasDescendant(targetId) {
+    for (const child of this.getAllChildren()) {
+      if (child.id === targetId) return true;
+      if (child.hasDescendant(targetId)) return true;
+    }
     return false;
   }
 

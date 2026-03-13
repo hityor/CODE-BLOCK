@@ -3,38 +3,49 @@ import { programCanvasEl } from "./ui.js";
 import { viewById } from "./blockViews.js";
 import { parseNames, isValidVarName } from "./utils.js";
 
-function collectDeclaredNames(containerModel, declaredNames) {
-  for (const blockModel of containerModel.children) {
-    if (blockModel.type === "varDecl") {
-      for (const name of parseNames(blockModel.rawNames)) {
-        if (isValidVarName(name)) declaredNames.add(name);
-      }
+function forEachBlock(container, callback) {
+  if (container === program) {
+    for (const child of program.children) {
+      forEachBlock(child, callback);
     }
-
-    if (blockModel.type === "if" || blockModel.type === "while") {
-      collectDeclaredNames(blockModel, declaredNames);
-    }
+    return;
   }
 
-  if (Array.isArray(containerModel.elseChildren)) {
-    for (const blockModel of containerModel.elseChildren) {
-      if (blockModel.type === "varDecl") {
-        for (const name of parseNames(blockModel.rawNames)) {
-          if (isValidVarName(name)) declaredNames.add(name);
-        }
-      }
-
-      if (blockModel.type === "if" || blockModel.type === "while") {
-        collectDeclaredNames(blockModel, declaredNames);
-      }
-    }
+  callback(container);
+  const children = container.getAllChildren ? container.getAllChildren() : [];
+  for (const child of children) {
+    forEachBlock(child, callback);
   }
 }
 
-function getDeclaredNames(program) {
+function collectDeclaredNames(declaredNames) {
+  forEachBlock(program, (block) => {
+    if (block.type === "varDecl") {
+      for (const name of parseNames(block.rawNames)) {
+        if (isValidVarName(name)) declaredNames.add(name);
+      }
+    }
+  });
+}
+
+function collectDeclaredArrayNames(declaredArrayNames) {
+  forEachBlock(program, (block) => {
+    if (block.type === "arrayDecl" && block.name) {
+      declaredArrayNames.add(block.name);
+    }
+  });
+}
+
+function getDeclaredNames() {
   const declaredNames = new Set();
-  collectDeclaredNames(program, declaredNames);
+  collectDeclaredNames(declaredNames);
   return [...declaredNames];
+}
+
+function getDeclaredArrayNames() {
+  const declaredArrayNames = new Set();
+  collectDeclaredArrayNames(declaredArrayNames);
+  return [...declaredArrayNames];
 }
 
 function syncVariableOptions(varSelectEl, preferredName) {
@@ -60,36 +71,6 @@ function syncVariableOptions(varSelectEl, preferredName) {
   }
 
   return "";
-}
-
-function collectDeclaredArrayNames(containerModel, declaredArrayNames) {
-  for (const blockModel of containerModel.children) {
-    if (blockModel.type === "arrayDecl" && blockModel.name) {
-      declaredArrayNames.add(blockModel.name);
-    }
-
-    if (blockModel.type === "if" || blockModel.type === "while") {
-      collectDeclaredArrayNames(blockModel, declaredArrayNames);
-    }
-  }
-
-  if (Array.isArray(containerModel.elseChildren)) {
-    for (const blockModel of containerModel.elseChildren) {
-      if (blockModel.type === "arrayDecl" && blockModel.name) {
-        declaredArrayNames.add(blockModel.name);
-      }
-
-      if (blockModel.type === "if" || blockModel.type === "while") {
-        collectDeclaredArrayNames(blockModel, declaredArrayNames);
-      }
-    }
-  }
-}
-
-function getDeclaredArrayNames() {
-  const declaredArrayNames = new Set();
-  collectDeclaredArrayNames(program, declaredArrayNames);
-  return [...declaredArrayNames];
 }
 
 function syncArrayOptions(selectEl, preferredName) {

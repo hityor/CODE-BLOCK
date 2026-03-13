@@ -30,8 +30,6 @@ function buildExprFromBlock(block) {
 
     return new ArrayGetExpr(block.arrayName, indexExpr);
   }
-
-  throw new Error("Unsupported expression block type: " + block.type);
 }
 
 function expressionFromTarget(childBlock, operandModel) {
@@ -59,22 +57,19 @@ function buildLogicalExprFromBlock(block) {
     const right = block.children[1]
       ? buildLogicalExprFromBlock(block.children[1])
       : null;
-    if (!left || !right) throw new Error("Missing operand in logic block");
     return new LogicalExpr(block.operator, left, right);
   }
   if (block.type === "not") {
     const operand = block.children[0]
       ? buildLogicalExprFromBlock(block.children[0])
       : null;
-    if (!operand) throw new Error("Missing operand in not block");
-    return new LogicalNotExpr(operand);
+    return new LogicalNotExpr("!", operand);
   }
-  throw new Error("Unsupported logical block type: " + block.type);
 }
 
 function buildStatements(blocks) {
   const statements = [];
-
+  
   for (const block of blocks) {
     if (block.type === "varDecl") {
       const names = parseNames(block.rawNames);
@@ -108,7 +103,6 @@ function buildStatements(blocks) {
       const valueExpr = block.children[1]
         ? buildExprFromBlock(block.children[1])
         : operandToAst(block.value);
-
       statements.push(
         new ArraySetStatement(block.arrayName, indexExpr, valueExpr),
       );
@@ -118,7 +112,6 @@ function buildStatements(blocks) {
     if (block.type === "if") {
       const condition = buildLogicalExprFromBlock(block.conditionChild);
       const thenBody = new BlockStatement(buildStatements(block.children));
-
       const elseBody =
         block.elseChildren.length > 0
           ? new BlockStatement(buildStatements(block.elseChildren))
@@ -131,7 +124,6 @@ function buildStatements(blocks) {
     if (block.type === "while") {
       const condition = buildLogicalExprFromBlock(block.conditionChild);
       const body = new BlockStatement(buildStatements(block.children));
-
       statements.push(new WhileStatement(condition, body));
       continue;
     }

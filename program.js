@@ -183,14 +183,14 @@ class Program {
   }
 
   deleteBlock(blockId) {
-  const location = this.findBlockWithParentById(blockId);
-  if (!location) return false;
+    const location = this.findBlockWithParentById(blockId);
+    if (!location) return false;
 
-  const { blockModel, parentBlockModel } = location;
-  if (!blockModel || !parentBlockModel) return false;
+    const { blockModel, parentBlockModel } = location;
+    if (!blockModel || !parentBlockModel) return false;
 
-  return blockModel.removeFromParent(parentBlockModel);
-}
+    return blockModel.removeFromParent(parentBlockModel);
+  }
 
   putBlock(parentBlock, blockType, addIndex) {
     if (!this.isStatementBlockType(blockType)) return;
@@ -228,8 +228,8 @@ class Program {
       parentBlock.children[0] = newBlock;
       return true;
     }
-    if (parentBlock.type === "logic" && !parentBlock.children[0]) {
-      if (operandType === "left") {
+    if (parentBlock.type === "logic") {
+      if (operandType === "left" && !parentBlock.children[0]) {
         parentBlock.children[0] = newBlock;
         return true;
       }

@@ -55,6 +55,11 @@ function getChildBlocks(blockModel) {
     for (const child of blockModel.children) children.push(child);
   }
 
+  if (blockModel.type === "for") {
+    if (blockModel.conditionChild) children.push(blockModel.conditionChild);
+    for (const child of blockModel.children) if (child) children.push(child);
+  }
+
   return children;
 }
 

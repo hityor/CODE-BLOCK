@@ -27,7 +27,7 @@ function validateBoolean(blockModel, errors) {
   }
 }
 
-function validateLogic(blockModel, declared, errorsById, errors) {
+function validateLogic(blockModel, scope, errorsById, errors) {
   if (
     !blockModel.operator ||
     (blockModel.operator !== "&&" && blockModel.operator !== "||")
@@ -35,39 +35,39 @@ function validateLogic(blockModel, declared, errorsById, errors) {
     errors.push("Неизвестный логический оператор");
   }
   if (blockModel.children[0]) {
-    validateLogicalExpression(blockModel.children[0], declared, errorsById);
+    validateLogicalExpression(blockModel.children[0], scope, errorsById);
   } else {
     errors.push("Левый операнд отсутствует");
   }
   if (blockModel.children[1]) {
-    validateLogicalExpression(blockModel.children[1], declared, errorsById);
+    validateLogicalExpression(blockModel.children[1], scope, errorsById);
   } else {
     errors.push("Правый операнд отсутствует");
   }
 }
 
-function validateNot(blockModel, declared, errorsById, errors) {
+function validateNot(blockModel, scope, errorsById, errors) {
   if (blockModel.children[0]) {
-    validateLogicalExpression(blockModel.children[0], declared, errorsById);
+    validateLogicalExpression(blockModel.children[0], scope, errorsById);
   } else {
     errors.push("Операнд отсутствует");
   }
 }
 
-function validateLogicalExpression(blockModel, declared, errorsById) {
+function validateLogicalExpression(blockModel, scope, errorsById) {
   if (blockModel.type === "compare") {
-    validateCompare(blockModel, declared, errorsById);
+    validateCompare(blockModel, scope, errorsById);
   } else if (blockModel.type === "boolean") {
     const errors = [];
     validateBoolean(blockModel, errors);
     errorsById.set(blockModel.id, errors);
   } else if (blockModel.type === "logic") {
     const errors = [];
-    validateLogic(blockModel, declared, errorsById, errors);
+    validateLogic(blockModel, scope, errorsById, errors);
     errorsById.set(blockModel.id, errors);
   } else if (blockModel.type === "not") {
     const errors = [];
-    validateNot(blockModel, declared, errorsById, errors);
+    validateNot(blockModel, scope, errorsById, errors);
     errorsById.set(blockModel.id, errors);
   } else {
     const errors = [
@@ -80,19 +80,19 @@ function validateLogicalExpression(blockModel, declared, errorsById) {
 function validateOperand(
   childBlock,
   operandModel,
-  declared,
+  scope,
   errorsById,
   errors,
   side,
 ) {
   if (childBlock) {
-    validateExpressionBlock(childBlock, declared, errorsById);
+    validateExpressionBlock(childBlock, scope, errorsById);
   } else {
     validateIntegerOperand(operandModel, errors, side);
   }
 }
 
-function validateExpressionBlock(blockModel, declared, errorsById) {
+function validateExpressionBlock(blockModel, scope, errorsById) {
   const errors = [];
 
   if (
@@ -110,7 +110,7 @@ function validateExpressionBlock(blockModel, declared, errorsById) {
   if (blockModel.type === "varGet") {
     if (!blockModel.variable) {
       errors.push("Переменная не выбрана");
-    } else if (!declared.has(blockModel.variable)) {
+    } else if (!scope.has(blockModel.variable)) {
       errors.push(`Переменная не объявлена: ${blockModel.variable}`);
     }
 
@@ -122,7 +122,7 @@ function validateExpressionBlock(blockModel, declared, errorsById) {
     validateOperand(
       blockModel.children[0],
       blockModel.left,
-      declared,
+      scope,
       errorsById,
       errors,
       "Левый",
@@ -130,7 +130,7 @@ function validateExpressionBlock(blockModel, declared, errorsById) {
     validateOperand(
       blockModel.children[1],
       blockModel.right,
-      declared,
+      scope,
       errorsById,
       errors,
       "Правый",
@@ -157,7 +157,7 @@ function validateExpressionBlock(blockModel, declared, errorsById) {
   }
 
   if (blockModel.type === "arrayGet") {
-    validateArrayGet(blockModel, declared, errorsById);
+    validateArrayGet(blockModel, scope, errorsById);
     return;
   }
 
@@ -165,37 +165,37 @@ function validateExpressionBlock(blockModel, declared, errorsById) {
   errorsById.set(blockModel.id, errors);
 }
 
-function validateVarDecl(blockModel, declared, errors) {
+function validateVarDecl(blockModel, scope, errors) {
   const names = parseNames(blockModel.rawNames);
   if (names.length === 0) errors.push("Объявление переменной пустое");
 
-  const localDeclared = new Set();
+  const localScope = new Set();
   for (const name of names) {
     if (!isValidVarName(name)) {
       errors.push(`Некорректное имя переменной: ${name}`);
-    } else if (localDeclared.has(name)) {
+    } else if (localScope.has(name)) {
       errors.push(`Дубликат переменной в объявлении: ${name}`);
-    } else if (declared.has(name)) {
+    } else if (scope.has(name)) {
       errors.push(`Переменная уже объявлена в другом блоке: ${name}`);
     } else {
-      localDeclared.add(name);
+      localScope.add(name);
     }
   }
 
-  for (const name of localDeclared) {
-    declared.add(name);
+  for (const name of localScope) {
+    scope.add(name);
   }
 }
 
-function validateAssign(blockModel, declared, errorsById, errors) {
+function validateAssign(blockModel, scope, errorsById, errors) {
   if (!blockModel.variable) {
     errors.push("Переменная для присваивания не выбрана");
-  } else if (!declared.has(blockModel.variable)) {
+  } else if (!scope.has(blockModel.variable)) {
     errors.push(`Переменная не объявлена: ${blockModel.variable}`);
   }
 
   if (blockModel.children[0]) {
-    validateExpressionBlock(blockModel.children[0], declared, errorsById);
+    validateExpressionBlock(blockModel.children[0], scope, errorsById);
   } else {
     validateIntegerOperand(
       blockModel.expression,
@@ -205,13 +205,13 @@ function validateAssign(blockModel, declared, errorsById, errors) {
   }
 }
 
-function validateCompare(blockModel, declared, errorsById) {
+function validateCompare(blockModel, scope, errorsById) {
   const errors = [];
 
   validateOperand(
     blockModel.children[0],
     blockModel.left,
-    declared,
+    scope,
     errorsById,
     errors,
     "Левый",
@@ -220,7 +220,7 @@ function validateCompare(blockModel, declared, errorsById) {
   validateOperand(
     blockModel.children[1],
     blockModel.right,
-    declared,
+    scope,
     errorsById,
     errors,
     "Правый",
@@ -233,15 +233,15 @@ function validateCompare(blockModel, declared, errorsById) {
   errorsById.set(blockModel.id, errors);
 }
 
-function validateArrayDecl(blockModel, declared, errors) {
+function validateArrayDecl(blockModel, scope, errors) {
   if (!blockModel.name) {
     errors.push("Имя массива не задано");
   } else if (!isValidVarName(blockModel.name)) {
     errors.push(`Некоррктное имя массива: ${blockModel.name}`);
-  } else if (declared.has(blockModel.name)) {
+  } else if (scope.has(blockModel.name)) {
     errors.push(`Имя уже занято: ${blockModel.name}`);
   } else {
-    declared.add(blockModel.name);
+    scope.add(blockModel.name);
   }
 
   if (blockModel.size === "") {
@@ -266,19 +266,19 @@ function validateArrayDecl(blockModel, declared, errors) {
   }
 }
 
-function validateArrayGet(blockModel, declared, errorsById) {
+function validateArrayGet(blockModel, scope, errorsById) {
   const errors = [];
 
   if (!blockModel.arrayName) {
     errors.push("Массив не выбран");
-  } else if (!declared.has(blockModel.arrayName)) {
+  } else if (!scope.has(blockModel.arrayName)) {
     errors.push(`Массив не объявлен: ${blockModel.arrayName}`);
   }
 
   validateOperand(
     blockModel.children[0],
     blockModel.index,
-    declared,
+    scope,
     errorsById,
     errors,
     "Индекс",
@@ -287,17 +287,17 @@ function validateArrayGet(blockModel, declared, errorsById) {
   errorsById.set(blockModel.id, errors);
 }
 
-function validateArraySet(blockModel, declared, errorsById, errors) {
+function validateArraySet(blockModel, scope, errorsById, errors) {
   if (!blockModel.arrayName) {
     errors.push("Массив не выбран");
-  } else if (!declared.has(blockModel.arrayName)) {
+  } else if (!scope.has(blockModel.arrayName)) {
     errors.push(`Массив не объявлен: ${blockModel.arrayName}`);
   }
 
   validateOperand(
     blockModel.children[0],
     blockModel.index,
-    declared,
+    scope,
     errorsById,
     errors,
     "Индекс",
@@ -305,91 +305,73 @@ function validateArraySet(blockModel, declared, errorsById, errors) {
   validateOperand(
     blockModel.children[1],
     blockModel.value,
-    declared,
+    scope,
     errorsById,
     errors,
     "Значение",
   );
 }
 
-function validateIf(blockModel, declared, errorsById, errors) {
+function validateIf(blockModel, scope, errorsById, errors) {
+  const childScope = new Set(scope);
   if (!blockModel.conditionChild) {
     errors.push("Условие не задано");
   } else {
-    validateLogicalExpression(blockModel.conditionChild, declared, errorsById);
+    validateLogicalExpression(
+      blockModel.conditionChild,
+      childScope,
+      errorsById,
+    );
   }
-
   for (const child of blockModel.children) {
-    validateStatementBlock(child, declared, errorsById);
+    validateStatementBlock(child, childScope, errorsById);
   }
-
   for (const child of blockModel.elseChildren) {
-    validateStatementBlock(child, declared, errorsById);
+    validateStatementBlock(child, childScope, errorsById);
   }
 }
 
-function validateWhile(blockModel, declared, errorsById, errors) {
+function validateWhile(blockModel, scope, errorsById, errors) {
+  const childScope = new Set(scope);
   if (!blockModel.conditionChild) {
     errors.push("Условие не задано");
   } else {
-    validateLogicalExpression(blockModel.conditionChild, declared, errorsById);
+    validateLogicalExpression(
+      blockModel.conditionChild,
+      childScope,
+      errorsById,
+    );
   }
-
   for (const child of blockModel.children) {
-    validateStatementBlock(child, declared, errorsById);
+    validateStatementBlock(child, childScope, errorsById);
   }
 }
 
-function validateStatementBlock(blockModel, declared, errorsById) {
+function validateStatementBlock(blockModel, scope, errorsById) {
   const errors = [];
 
-  if (blockModel.type === "varDecl") {
-    validateVarDecl(blockModel, declared, errors);
-    errorsById.set(blockModel.id, errors);
-    return;
-  }
+  if (blockModel.type === "varDecl") validateVarDecl(blockModel, scope, errors);
+  else if (blockModel.type === "assign")
+    validateAssign(blockModel, scope, errorsById, errors);
+  else if (blockModel.type === "arrayDecl")
+    validateArrayDecl(blockModel, scope, errors);
+  else if (blockModel.type === "arraySet")
+    validateArraySet(blockModel, scope, errorsById, errors);
+  else if (blockModel.type === "if")
+    validateIf(blockModel, scope, errorsById, errors);
+  else if (blockModel.type === "while")
+    validateWhile(blockModel, scope, errorsById, errors);
+  else errors.push(`Неизвестный тип блока: ${blockModel.type}`);
 
-  if (blockModel.type === "assign") {
-    validateAssign(blockModel, declared, errorsById, errors);
-    errorsById.set(blockModel.id, errors);
-    return;
-  }
-
-  if (blockModel.type === "arrayDecl") {
-    validateArrayDecl(blockModel, declared, errors);
-    errorsById.set(blockModel.id, errors);
-    return;
-  }
-
-  if (blockModel.type === "arraySet") {
-    validateArraySet(blockModel, declared, errorsById, errors);
-    errorsById.set(blockModel.id, errors);
-    return;
-  }
-
-  if (blockModel.type === "if") {
-    validateIf(blockModel, declared, errorsById, errors);
-    errorsById.set(blockModel.id, errors);
-    return;
-  }
-
-  if (blockModel.type === "while") {
-    validateWhile(blockModel, declared, errorsById, errors);
-    errorsById.set(blockModel.id, errors);
-    return;
-  }
-
-  errors.push(`Неизвестный тип блока: ${blockModel.type}`);
   errorsById.set(blockModel.id, errors);
 }
 
 export function validateProgram(program) {
   const errorsById = new Map();
-  const declared = new Set();
+  const scope = new Set();
 
   for (const blockModel of program.children) {
-    validateStatementBlock(blockModel, declared, errorsById);
+    validateStatementBlock(blockModel, scope, errorsById);
   }
-
   return errorsById;
 }
