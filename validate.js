@@ -313,21 +313,26 @@ function validateArraySet(blockModel, scope, errorsById, errors) {
 }
 
 function validateIf(blockModel, scope, errorsById, errors) {
-  const childScope = new Set(scope);
+  const conditionScope = new Set(scope);
+  const thenScope = new Set(scope);
+  const elseScope = new Set(scope);
+
   if (!blockModel.conditionChild) {
     errors.push("Условие не задано");
   } else {
     validateLogicalExpression(
       blockModel.conditionChild,
-      childScope,
+      conditionScope,
       errorsById,
     );
   }
+
   for (const child of blockModel.children) {
-    validateStatementBlock(child, childScope, errorsById);
+    validateStatementBlock(child, thenScope, errorsById);
   }
+
   for (const child of blockModel.elseChildren) {
-    validateStatementBlock(child, childScope, errorsById);
+    validateStatementBlock(child, elseScope, errorsById);
   }
 }
 

@@ -60,6 +60,15 @@ function getChildBlocks(blockModel) {
     for (const child of blockModel.children) if (child) children.push(child);
   }
 
+  if (blockModel.type === "logic") {
+    if (blockModel.children[0]) children.push(blockModel.children[0]);
+    if (blockModel.children[1]) children.push(blockModel.children[1]);
+  }
+
+  if (blockModel.type === "not") {
+    if (blockModel.children[0]) children.push(blockModel.children[0]);
+  }
+
   return children;
 }
 
