@@ -80,11 +80,9 @@ class Program {
       if (value.type) {
         block[key] = this.deserializeBlock(value);
       } else if (Array.isArray(value)) {
-        block[key] = value
-          .map((item) =>
-            item && item.type ? this.deserializeBlock(item) : item,
-          )
-          .filter(Boolean);
+        block[key] = value.map((item) =>
+          item && item.type ? this.deserializeBlock(item) : item,
+        );
       } else block[key] = value;
     }
 
@@ -212,20 +210,20 @@ class Program {
     if (!this.canInsertExpressionIntoParent(parentBlock, operandType))
       return false;
 
-    if (operandType === "condition") {
+    if (operandType === "condition" && !parentBlock.conditionChild) {
       parentBlock.conditionChild = newBlock;
       return true;
     }
-    if (operandType === "operand") {
+    if (operandType === "operand" && !parentBlock.children[0]) {
       parentBlock.children[0] = newBlock;
       return true;
     }
-    if (parentBlock.type === "logic") {
+    if (parentBlock.type === "logic" && !parentBlock.children[0]) {
       if (operandType === "left") {
         parentBlock.children[0] = newBlock;
         return true;
       }
-      if (operandType === "right") {
+      if (operandType === "right" && !parentBlock.children[1]) {
         parentBlock.children[1] = newBlock;
         return true;
       }
@@ -244,8 +242,10 @@ class Program {
         operandType === "expression"
           ? 0
           : 1;
-      parentBlock.children[idx] = newBlock;
-      return true;
+      if (!parentBlock.children[idx]) {
+        parentBlock.children[idx] = newBlock;
+        return true;
+      }
     }
     return false;
   }

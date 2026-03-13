@@ -141,7 +141,6 @@ export class DnD {
       if (data.startsWith("add:")) {
         const blockType = data.split(":")[1];
 
-        // Проверяем, можно ли вставить этот тип блока в данный слот
         if (program.canInsertBlockType(blockType, parent, operandType)) {
           const newBlock = program.createBlockByType(blockType);
           program.insertChildIntoParent(parent, newBlock, operandType);

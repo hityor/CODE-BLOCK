@@ -216,3 +216,7 @@ select {
 .whileIfBodyCanvas:not(:empty)::before {
   content: none;
 }
+
+#fileInput {
+  display: none;
+}

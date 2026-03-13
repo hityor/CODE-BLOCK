@@ -22,7 +22,7 @@ function makeOperandView(operandModel, parentBlockModel, operandType) {
   dnd.makeExpressionDropZone(rootEl, parentBlockModel, operandType);
 
   const literalInputEl = document.createElement("input");
-  literalInputEl.type = "text";
+  literalInputEl.type = "number";
   literalInputEl.placeholder = "0";
   literalInputEl.value = "";
 

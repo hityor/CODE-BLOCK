@@ -19,7 +19,7 @@ function collectDeclaredNames(containerModel, declaredNames) {
   if (Array.isArray(containerModel.elseChildren)) {
     for (const blockModel of containerModel.elseChildren) {
       if (blockModel.type === "varDecl") {
-        for (const name of parseNames(blockModel, rawName)) {
+        for (const name of parseNames(blockModel.rawNames)) {
           if (isValidVarName(name)) declaredNames.add(name);
         }
       }
@@ -54,7 +54,6 @@ function syncVariableOptions(varSelectEl, preferredName) {
     varSelectEl.value = previousValue;
     return previousValue;
   }
-
   if (names.length > 0) {
     varSelectEl.value = names[0];
     return names[0];

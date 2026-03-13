@@ -12,8 +12,6 @@ export class Block {
     this.type = type;
     this.children = [];
     this.errors = [];
-    this.isStatement = false;
-    this.isExpression = false;
 
     this.getView = Views[`${this.type}View`];
   }
@@ -114,7 +112,6 @@ export class Block {
 export class VarDecl extends Block {
   constructor() {
     super("varDecl");
-    this.isStatement = true;
     this.rawNames = "";
   }
 }
@@ -122,7 +119,6 @@ export class VarDecl extends Block {
 export class Assign extends Block {
   constructor() {
     super("assign");
-    this.isStatement = true;
     this.variable = "";
     this.expression = new Operand();
   }
@@ -131,7 +127,6 @@ export class Assign extends Block {
 export class VarGet extends Block {
   constructor() {
     super("varGet");
-    this.isExpression = true;
     this.variable = "";
   }
 }
@@ -139,7 +134,6 @@ export class VarGet extends Block {
 export class ArrayDecl extends Block {
   constructor() {
     super("arrayDecl");
-    this.isStatement = true;
     this.name = "";
     this.size = "";
   }
@@ -148,7 +142,6 @@ export class ArrayDecl extends Block {
 export class ArrayGet extends Block {
   constructor() {
     super("arrayGet");
-    this.isExpression = true;
     this.arrayName = "";
     this.index = new Operand();
   }
@@ -157,7 +150,6 @@ export class ArrayGet extends Block {
 export class ArraySet extends Block {
   constructor() {
     super("arraySet");
-    this.isStatement = true;
     this.arrayName = "";
     this.index = new Operand();
     this.value = new Operand();
@@ -167,7 +159,6 @@ export class ArraySet extends Block {
 export class Arith extends Block {
   constructor() {
     super("arith");
-    this.isExpression = true;
     this.operator = "+";
     this.left = new Operand();
     this.right = new Operand();
@@ -186,17 +177,14 @@ export class Compare extends Block {
 export class If extends Block {
   constructor() {
     super("if");
-    this.comparator = ">";
     this.conditionChild = null;
     this.elseChildren = [];
-    this.isStatement = true;
   }
 }
 
 export class While extends Block {
   constructor() {
     super("while");
-    this.isStatement = true;
     this.conditionChild = null;
   }
 }
@@ -204,7 +192,6 @@ export class While extends Block {
 export class Boolean extends Block {
   constructor() {
     super("boolean");
-    this.isExpression = true;
     this.value = true;
   }
 }
@@ -212,7 +199,6 @@ export class Boolean extends Block {
 export class Logic extends Block {
   constructor() {
     super("logic");
-    this.isExpression = true;
     this.operator = "&&";
   }
 }
@@ -220,6 +206,5 @@ export class Logic extends Block {
 export class Not extends Block {
   constructor() {
     super("not");
-    this.isExpression = true;
   }
 }
