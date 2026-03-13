@@ -24,7 +24,7 @@
         <div class="blockTool" id="compare" draggable="true">Compare</div>
         <div class="blockTool" id="logic" draggable="true">Logic</div>
 
-        <div class="blockTool" id="if" draggable="true">If</div>
+        <div class="blockTool" id="if" draggable="true">If-Else</div>
         <div class="blockTool" id="while" draggable="true">While</div>
       </aside>
 
@@ -34,6 +34,7 @@
           <button id="saveBtn">SAVE</button>
           <button id="loadBtn">LOAD</button>
           <input type="file" id="fileInput" accept=".json,application/json" />
+          <button id="clearCanvasBtn">CLEAR CANVAS</button>
         </header>
 
         <section class="workspace">
@@ -42,7 +43,9 @@
       </main>
 
       <aside class="rightPanel">
-        <div id="trashZone" class="trashZone">Переташите сюда блок для удаления</div>
+        <div id="trashZone" class="trashZone">
+          Переташите сюда блок для удаления
+        </div>
 
         <h3>Logs</h3>
         <div id="logContent"></div>

@@ -10,6 +10,7 @@ const runBtn = document.getElementById("runBtn");
 const saveBtn = document.getElementById("saveBtn");
 const loadBtn = document.getElementById("loadBtn");
 const fileInput = document.getElementById("fileInput");
+const clearCanvasBtn = document.getElementById("clearCanvasBtn");
 const trashZone = document.getElementById("trashZone");
 const memoryView = document.getElementById("logContent");
 export const dnd = new DnD();
@@ -116,6 +117,13 @@ fileInput.addEventListener("change", (e) => {
   };
 
   reader.readAsText(file);
+});
+
+clearCanvasBtn.addEventListener("click", () => {
+  program.children = [];
+  program.nextId = 1;
+  memoryView.innerHTML = "";
+  validateAndRender();
 });
 
 function validateAndStoreErrors() {
