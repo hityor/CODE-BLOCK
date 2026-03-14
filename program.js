@@ -55,13 +55,10 @@ class Program {
   initializeForBlock(block) {
     if (block.type !== "for") return;
 
-    const initBlock = this.createBlockByType("varDecl", true);
-    block.initializerChild = initBlock;
-
-    const condBlock = this.createBlockByType("compare", true);
+    const condBlock = this.createBlockByType("compare");
     block.conditionChild = condBlock;
 
-    const incBlock = this.createBlockByType("assign", true);
+    const incBlock = this.createBlockByType("assign");
     block.incrementChild = incBlock;
   }
 
@@ -223,7 +220,9 @@ class Program {
 
     const block = this.createBlockByType(blockType);
     if (!block) return;
-
+    if (blockType === "for") {
+      this.initializeForBlock(block);
+    }
     const index = this.normalizeIndex(
       addIndex,
       parentBlock.elseChildren.length,

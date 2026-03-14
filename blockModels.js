@@ -226,6 +226,13 @@ export class For extends Block {
         return true;
       }
     }
+    if (Array.isArray(parent.elseChildren)) {
+      const idx = parent.elseChildren.indexOf(this);
+      if (idx !== -1) {
+        parent.elseChildren.splice(idx, 1);
+        return true;
+      }
+    }
     return false;
   }
 }
