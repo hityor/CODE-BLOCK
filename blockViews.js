@@ -364,7 +364,7 @@ export const Views = {
     ifLabelEl.textContent = "if";
 
     const conditionSlotEl = document.createElement("div");
-    conditionSlotEl.className = "whileIfBodyCanvas";
+    conditionSlotEl.className = "whileIFConditionSlot";
     dnd.makeConditionDropZone(conditionSlotEl, this);
 
     const thenLabelEl = document.createElement("span");
@@ -382,6 +382,7 @@ export const Views = {
     dnd.makeDropZone(thenCanvasEl, this);
 
     const elseLabelEl = document.createElement("div");
+    elseLabelEl.className = "elseSeparator";
     elseLabelEl.textContent = "else";
 
     const elseCanvasEl = document.createElement("div");

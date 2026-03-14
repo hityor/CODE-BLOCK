@@ -1,0 +1,453 @@
+{
+  "nextId": 85,
+  "children": [
+    {
+      "id": 1,
+      "type": "arrayDecl",
+      "children": [],
+      "errors": [],
+      "name": "arr",
+      "size": "5",
+      "isStatement": true,
+      "isExpression": false
+    },
+    {
+      "id": 2,
+      "type": "arraySet",
+      "children": [],
+      "errors": [],
+      "arrayName": "arr",
+      "index": {
+        "value": "0",
+        "variable": ""
+      },
+      "value": {
+        "value": "2",
+        "variable": ""
+      },
+      "isStatement": true,
+      "isExpression": false
+    },
+    {
+      "id": 6,
+      "type": "arraySet",
+      "children": [],
+      "errors": [],
+      "arrayName": "arr",
+      "index": {
+        "value": "1",
+        "variable": ""
+      },
+      "value": {
+        "value": "3",
+        "variable": ""
+      },
+      "isStatement": true,
+      "isExpression": false
+    },
+    {
+      "id": 5,
+      "type": "arraySet",
+      "children": [],
+      "errors": [],
+      "arrayName": "arr",
+      "index": {
+        "value": "2",
+        "variable": ""
+      },
+      "value": {
+        "value": "4",
+        "variable": ""
+      },
+      "isStatement": true,
+      "isExpression": false
+    },
+    {
+      "id": 4,
+      "type": "arraySet",
+      "children": [],
+      "errors": [],
+      "arrayName": "arr",
+      "index": {
+        "value": "3",
+        "variable": ""
+      },
+      "value": {
+        "value": "5",
+        "variable": ""
+      },
+      "isStatement": true,
+      "isExpression": false
+    },
+    {
+      "id": 3,
+      "type": "arraySet",
+      "children": [],
+      "errors": [],
+      "arrayName": "arr",
+      "index": {
+        "value": "4",
+        "variable": ""
+      },
+      "value": {
+        "value": "1",
+        "variable": ""
+      },
+      "isStatement": true,
+      "isExpression": false
+    },
+    {
+      "id": 45,
+      "type": "for",
+      "children": [
+        {
+          "id": 53,
+          "type": "for",
+          "children": [
+            {
+              "id": 65,
+              "type": "if",
+              "children": [
+                {
+                  "id": 72,
+                  "type": "varDecl",
+                  "children": [],
+                  "errors": [],
+                  "rawNames": "temp"
+                },
+                {
+                  "id": 73,
+                  "type": "assign",
+                  "children": [
+                    {
+                      "id": 74,
+                      "type": "arrayGet",
+                      "children": [
+                        {
+                          "id": 75,
+                          "type": "varGet",
+                          "children": [],
+                          "errors": [],
+                          "variable": "j"
+                        }
+                      ],
+                      "errors": [],
+                      "arrayName": "arr",
+                      "index": {
+                        "value": ""
+                      }
+                    }
+                  ],
+                  "errors": [],
+                  "variable": "temp",
+                  "expression": {
+                    "value": ""
+                  }
+                },
+                {
+                  "id": 76,
+                  "type": "arraySet",
+                  "children": [
+                    {
+                      "id": 77,
+                      "type": "varGet",
+                      "children": [],
+                      "errors": [],
+                      "variable": "j"
+                    },
+                    {
+                      "id": 78,
+                      "type": "arrayGet",
+                      "children": [
+                        {
+                          "id": 79,
+                          "type": "arith",
+                          "children": [
+                            {
+                              "id": 80,
+                              "type": "varGet",
+                              "children": [],
+                              "errors": [],
+                              "variable": "j"
+                            }
+                          ],
+                          "errors": [],
+                          "operator": "-",
+                          "left": {
+                            "value": ""
+                          },
+                          "right": {
+                            "value": "1"
+                          }
+                        }
+                      ],
+                      "errors": [],
+                      "arrayName": "arr",
+                      "index": {
+                        "value": ""
+                      }
+                    }
+                  ],
+                  "errors": [],
+                  "arrayName": "arr",
+                  "index": {
+                    "value": ""
+                  },
+                  "value": {
+                    "value": ""
+                  }
+                },
+                {
+                  "id": 81,
+                  "type": "arraySet",
+                  "children": [
+                    {
+                      "id": 82,
+                      "type": "arith",
+                      "children": [
+                        {
+                          "id": 83,
+                          "type": "varGet",
+                          "children": [],
+                          "errors": [],
+                          "variable": "j"
+                        }
+                      ],
+                      "errors": [],
+                      "operator": "-",
+                      "left": {
+                        "value": ""
+                      },
+                      "right": {
+                        "value": "1"
+                      }
+                    },
+                    {
+                      "id": 84,
+                      "type": "varGet",
+                      "children": [],
+                      "errors": [],
+                      "variable": "temp"
+                    }
+                  ],
+                  "errors": [],
+                  "arrayName": "arr",
+                  "index": {
+                    "value": ""
+                  },
+                  "value": {
+                    "value": ""
+                  }
+                }
+              ],
+              "errors": [],
+              "conditionChild": {
+                "id": 66,
+                "type": "compare",
+                "children": [
+                  {
+                    "id": 67,
+                    "type": "arrayGet",
+                    "children": [
+                      {
+                        "id": 69,
+                        "type": "varGet",
+                        "children": [],
+                        "errors": [],
+                        "variable": "j"
+                      }
+                    ],
+                    "errors": [],
+                    "arrayName": "arr",
+                    "index": {
+                      "value": ""
+                    }
+                  },
+                  {
+                    "id": 68,
+                    "type": "arrayGet",
+                    "children": [
+                      {
+                        "id": 70,
+                        "type": "arith",
+                        "children": [
+                          {
+                            "id": 71,
+                            "type": "varGet",
+                            "children": [],
+                            "errors": [],
+                            "variable": "j"
+                          }
+                        ],
+                        "errors": [],
+                        "operator": "-",
+                        "left": {
+                          "value": ""
+                        },
+                        "right": {
+                          "value": "1"
+                        }
+                      }
+                    ],
+                    "errors": [],
+                    "arrayName": "arr",
+                    "index": {
+                      "value": ""
+                    }
+                  }
+                ],
+                "errors": [],
+                "operator": "<",
+                "left": {
+                  "value": ""
+                },
+                "right": {
+                  "value": ""
+                }
+              },
+              "elseChildren": []
+            }
+          ],
+          "errors": [],
+          "initialVarName": "j",
+          "initialValue": {
+            "value": "1"
+          },
+          "conditionChild": {
+            "id": 54,
+            "type": "compare",
+            "children": [
+              {
+                "id": 55,
+                "type": "varGet",
+                "children": [],
+                "errors": [],
+                "variable": "j"
+              },
+              {
+                "id": 56,
+                "type": "arith",
+                "children": [
+                  null,
+                  {
+                    "id": 57,
+                    "type": "varGet",
+                    "children": [],
+                    "errors": [],
+                    "variable": "i"
+                  }
+                ],
+                "errors": [],
+                "operator": "-",
+                "left": {
+                  "value": "5"
+                },
+                "right": {
+                  "value": ""
+                }
+              }
+            ],
+            "errors": [],
+            "operator": "<",
+            "left": {
+              "value": ""
+            },
+            "right": {
+              "value": ""
+            }
+          },
+          "incrementChild": {
+            "id": 58,
+            "type": "assign",
+            "children": [
+              {
+                "id": 59,
+                "type": "arith",
+                "children": [
+                  {
+                    "id": 60,
+                    "type": "varGet",
+                    "children": [],
+                    "errors": [],
+                    "variable": "j"
+                  }
+                ],
+                "errors": [],
+                "operator": "+",
+                "left": {
+                  "value": ""
+                },
+                "right": {
+                  "value": "1"
+                }
+              }
+            ],
+            "errors": [],
+            "variable": "j",
+            "expression": {
+              "value": "1"
+            }
+          }
+        }
+      ],
+      "errors": [],
+      "initialVarName": "i",
+      "initialValue": {
+        "value": "0"
+      },
+      "conditionChild": {
+        "id": 46,
+        "type": "compare",
+        "children": [
+          {
+            "id": 47,
+            "type": "varGet",
+            "children": [],
+            "errors": [],
+            "variable": "i"
+          }
+        ],
+        "errors": [],
+        "operator": "<",
+        "left": {
+          "value": ""
+        },
+        "right": {
+          "value": "5"
+        }
+      },
+      "incrementChild": {
+        "id": 48,
+        "type": "assign",
+        "children": [
+          {
+            "id": 51,
+            "type": "arith",
+            "children": [
+              {
+                "id": 52,
+                "type": "varGet",
+                "children": [],
+                "errors": [],
+                "variable": "i"
+              }
+            ],
+            "errors": [],
+            "operator": "+",
+            "left": {
+              "value": ""
+            },
+            "right": {
+              "value": "1"
+            }
+          }
+        ],
+        "errors": [],
+        "variable": "i",
+        "expression": {
+          "value": ""
+        }
+      }
+    }
+  ]
+}

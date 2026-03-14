@@ -1,7 +1,7 @@
 import { program } from "./program.js";
 import { programCanvasEl } from "./ui.js";
 import { viewById } from "./blockViews.js";
-import { parseNames, isValidVarName } from "./utils.js";
+import { parseNames, isValidVarName, walkProgramTree } from "./utils.js";
 
 function forEachBlock(container, callback) {
   if (container === program) {
@@ -52,6 +52,24 @@ function getDeclaredArrayNames() {
   const declaredArrayNames = new Set();
   collectDeclaredArrayNames(declaredArrayNames);
   return [...declaredArrayNames];
+}
+
+export function ensureNamesSelected() {
+  const varNames = getDeclaredNames();
+  const arrayNames = getDeclaredArrayNames();
+
+  walkProgramTree(program, (block) => {
+    if (block.type === "assign" || block.type === "varGet") {
+      if (!block.variable || !varNames.includes(block.variable)) {
+        block.variable = varNames.length > 0 ? varNames[0] : "";
+      }
+    }
+    if (block.type === "arrayGet" || block.type === "arraySet") {
+      if (!block.arrayName || !arrayNames.includes(block.arrayName)) {
+        block.arrayName = arrayNames.length > 0 ? arrayNames[0] : "";
+      }
+    }
+  });
 }
 
 function syncVariableOptions(varSelectEl, preferredName) {

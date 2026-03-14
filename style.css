@@ -1,3 +1,6 @@
+* {
+  box-sizing: border-box;
+}
 body {
   margin: 0;
   font-family: Arial;
@@ -6,14 +9,15 @@ body {
 
 .app {
   display: grid;
-  grid-template-columns: 200px 1fr 250px;
+  grid-template-columns: 165px 1fr 250px;
   height: 100vh;
   overflow: hidden;
 }
 
 .leftPanel {
+  align-items: center;
   background: #2e4255;
-  padding: 20px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -27,10 +31,10 @@ body {
 
 .topBar {
   height: 60px;
-  background: #ffffff;
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 10px 20px 12px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .workspace {
@@ -39,6 +43,7 @@ body {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  background: #f8fafc;
 }
 
 .rightPanel {
@@ -48,6 +53,17 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  caret-color: transparent;
+}
+
+#logContent {
+  font-size: 10px;
+  line-height: 15px;
+}
+
+#memoryContent {
+  font-size: 15px;
+  line-height: 20px;
 }
 
 .trashZone {
@@ -101,10 +117,10 @@ body {
 button {
   padding: 10px 15px;
   margin-right: 5px;
-  background: #3498db;
-  color: #ffffff;
   border: none;
   border-radius: 4px;
+  background-color: #e2e8f0;
+  color: #111111;
 }
 
 button:hover {
@@ -116,19 +132,68 @@ button:active {
   cursor: pointer;
 }
 
-.blockTool {
-  padding: 10px 15px;
+#runBtn {
   background: #3498db;
   color: #ffffff;
+}
+
+#clearCanvasBtn {
+  margin-left: auto;
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #ef4444;
+}
+
+.blockTool {
+  width: 130px;
+  padding: 8px 10px;
   border: none;
   border-radius: 4px;
 }
 
+#varDecl,
+#assign,
+#varGet {
+  background: #3498db;
+  color: #ffffff;
+}
+
+#arrayDecl,
+#arraySet,
+#arrayGet {
+  background: #9720d2;
+  color: #ffffff;
+}
+
+#arith {
+  background: #ce7b0f;
+  color: #ffffff;
+}
+
+#boolean,
+#not,
+#compare,
+#logic {
+  background: #09a34a;
+  color: #ffffff;
+}
+
+#if,
+#while,
+#for {
+  background: #ad351f;
+  color: #ffffff;
+}
+
 .block {
-  padding: 10px 12px;
-  margin: 10px;
+  padding: 8px 12px;
+  margin: 6px 0;
+  flex-wrap: wrap;
+  gap: 8px;
   border-radius: 8px;
   border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .blockSuccess {
@@ -236,7 +301,10 @@ input {
 }
 
 select {
-  padding: 10px 12px;
+  -webkit-appearance: none;
+  appearance: none;
+  align-items: center;
+  padding: 5px 12px;
   font-size: 14px;
   font-family: inherit;
   border: 1px solid #c6c6c6;
@@ -244,31 +312,31 @@ select {
   background-color: #ffffff;
 }
 
-.exprMode,
 .exprOperator {
-  width: 95px;
+  margin-inline: 5px;
 }
 
 .operandBlock {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 0px;
   padding: 6px;
   border: 1px dashed #9ca3af;
   border-radius: 6px;
   background: #ffffff;
-  min-width: 60px;
+  min-width: 10px;
   min-height: 32px;
 }
 
-.operandBlock input,
-.operandBlock select {
-  padding: 6px 8px;
+.operandBlock input {
+  width: 45px;
+  padding: 6px 0;
+  text-align: center;
   font-size: 13px;
 }
 
-.operandBlock input {
-  width: 76px;
+.elseSeparator {
+  margin-top: 6px;
 }
 
 .whileIfHeader {
@@ -278,9 +346,21 @@ select {
   flex-wrap: wrap;
 }
 
+.whileIFConditionSlot {
+  min-width: 100px;
+  min-height: 30px;
+  border: 1px dashed #888;
+  border-radius: 4px;
+  background: hsl(0, 0%, 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
 .whileIfBodyCanvas {
-  margin-top: 10px;
   min-height: 80px;
+  margin-top: 10px;
   border: 1px dashed #9ca3af;
   border-radius: 6px;
   padding: 8px;
@@ -288,7 +368,6 @@ select {
 }
 
 .whileIfBodyCanvas::before {
-  content: "drop statements here";
   display: block;
   color: #888;
   font-style: italic;
@@ -299,6 +378,40 @@ select {
 
 .whileIfBodyCanvas:not(:empty)::before {
   content: none;
+}
+
+.forHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.forInitPart {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.forConditionSlot,
+.forIncrementSlot {
+  min-width: 120px;
+  min-height: 40px;
+  border: 1px dashed #888;
+  border-radius: 4px;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.forSeparator {
+  font-weight: bold;
+  color: #555;
+  font-size: 18px;
 }
 
 #fileInput {

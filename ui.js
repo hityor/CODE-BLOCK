@@ -1,9 +1,10 @@
 import { program } from "./program.js";
 import { viewById } from "./blockViews.js";
 import { validateProgram } from "./validate.js";
-import { renderProgram } from "./render.js";
+import { renderProgram, ensureNamesSelected } from "./render.js";
 import { runProgram } from "./engine.js";
 import { DnD } from "./dnd.js";
+import { walkProgramTree } from "./utils.js";
 
 export const programCanvasEl = document.getElementById("canvas");
 const runBtn = document.getElementById("runBtn");
@@ -15,74 +16,6 @@ const trashZone = document.getElementById("trashZone");
 const logView = document.getElementById("logContent");
 const memoryView = document.getElementById("memoryContent");
 export const dnd = new DnD();
-
-function getChildBlocks(blockModel) {
-  const children = [];
-
-  if (blockModel.type === "assign") {
-    if (blockModel.children[0]) children.push(blockModel.children[0]);
-  }
-
-  if (blockModel.type === "arith") {
-    if (blockModel.children[0]) children.push(blockModel.children[0]);
-    if (blockModel.children[1]) children.push(blockModel.children[1]);
-  }
-
-  if (blockModel.type === "arrayGet") {
-    if (blockModel.children[0]) children.push(blockModel.children[0]);
-  }
-
-  if (blockModel.type === "arraySet") {
-    if (blockModel.children[0]) children.push(blockModel.children[0]);
-    if (blockModel.children[1]) children.push(blockModel.children[1]);
-  }
-
-  if (blockModel.type === "compare") {
-    if (blockModel.children[0]) children.push(blockModel.children[0]);
-    if (blockModel.children[1]) children.push(blockModel.children[1]);
-  }
-
-  if (blockModel.type === "if") {
-    if (blockModel.conditionChild) children.push(blockModel.conditionChild);
-
-    for (const child of blockModel.children) children.push(child);
-    for (const child of blockModel.elseChildren) children.push(child);
-  }
-
-  if (blockModel.type === "while") {
-    if (blockModel.conditionChild) children.push(blockModel.conditionChild);
-
-    for (const child of blockModel.children) children.push(child);
-  }
-
-  if (blockModel.type === "for") {
-    if (blockModel.conditionChild) children.push(blockModel.conditionChild);
-    for (const child of blockModel.children) if (child) children.push(child);
-  }
-
-  if (blockModel.type === "logic") {
-    if (blockModel.children[0]) children.push(blockModel.children[0]);
-    if (blockModel.children[1]) children.push(blockModel.children[1]);
-  }
-
-  if (blockModel.type === "not") {
-    if (blockModel.children[0]) children.push(blockModel.children[0]);
-  }
-
-  return children;
-}
-
-function walkBlockTree(blockModel, visit) {
-  visit(blockModel);
-
-  for (const child of getChildBlocks(blockModel)) {
-    walkBlockTree(child, visit);
-  }
-}
-
-function walkProgramTree(visit) {
-  for (const blockModel of program.children) walkBlockTree(blockModel, visit);
-}
 
 runBtn.addEventListener("click", function () {
   runProgram(program, {
@@ -149,8 +82,9 @@ clearCanvasBtn.addEventListener("click", () => {
 });
 
 function validateAndStoreErrors() {
+  ensureNamesSelected();
   const errorsById = validateProgram(program);
-  walkProgramTree((blockModel) => {
+  walkProgramTree(program, (blockModel) => {
     blockModel.errors = errorsById.get(blockModel.id) ?? [];
   });
 }
