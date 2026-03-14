@@ -18,6 +18,9 @@ const memoryView = document.getElementById("memoryContent");
 export const dnd = new DnD();
 
 runBtn.addEventListener("click", function () {
+  memoryView.innerHTML = "";
+  logView.innerHTML = "";
+
   runProgram(program, {
     validateAndStoreErrors,
     render: renderProgram,
