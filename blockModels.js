@@ -61,14 +61,6 @@ export class Block {
       }
     }
     return false;
-    }
-
-  hasDescendant(targetId) {
-    for (const child of this.getAllChildren()) {
-      if (child.id === targetId) return true;
-      if (child.hasDescendant(targetId)) return true;
-    }
-    return false;
   }
 
   serialize() {
@@ -189,6 +181,52 @@ export class While extends Block {
   constructor() {
     super("while");
     this.conditionChild = null;
+  }
+}
+
+export class For extends Block {
+  constructor() {
+    super("for");
+    this.initialVarName = "";
+    this.initialValue = new Operand();
+    this.initialExprChild = null;
+    this.conditionChild = null;
+    this.incrementChild = null;
+  }
+
+  getAllChildren() {
+    const children = [];
+    if (this.initialExprChild) children.push(this.initialExprChild);
+    if (this.conditionChild) children.push(this.conditionChild);
+    if (this.incrementChild) children.push(this.incrementChild);
+    if (Array.isArray(this.children)) {
+      for (const child of this.children) if (child) children.push(child);
+    }
+    return children;
+  }
+
+  removeFromParent(parent) {
+    if (!parent) return false;
+    if (parent.initialExprChild === this) {
+      parent.initialExprChild = null;
+      return true;
+    }
+    if (parent.conditionChild === this) {
+      parent.conditionChild = null;
+      return true;
+    }
+    if (parent.incrementChild === this) {
+      parent.incrementChild = null;
+      return true;
+    }
+    if (Array.isArray(parent.children)) {
+      const idx = parent.children.indexOf(this);
+      if (idx !== -1) {
+        parent.children.splice(idx, 1);
+        return true;
+      }
+    }
+    return false;
   }
 }
 

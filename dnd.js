@@ -126,6 +126,7 @@ export class DnD {
       e.dataTransfer.dropEffect = "move";
     }
   }
+
   makeExpressionDropZone(zone, parent, operandType) {
     zone.addEventListener("dragover", (e) =>
       this.makeExpressionDragOver(e, parent, operandType),
@@ -195,6 +196,52 @@ export class DnD {
         if (parent.conditionChild) parent.conditionChild = null;
         blockModel.removeFromParent(location.parentBlockModel);
         parent.conditionChild = blockModel;
+        validateAndRender();
+      }
+    });
+  }
+
+  makeStatementSlotDropZone(zone, parent, slotName) {
+    zone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      const data = e.dataTransfer.getData("text/plain");
+      if (!data) return;
+      if (data.startsWith("add:")) {
+        const blockType = data.split(":")[1];
+        if (program.isStatementBlockType(blockType)) {
+          e.dataTransfer.dropEffect = "copy";
+        }
+      } else if (data.startsWith("move:")) {
+        e.dataTransfer.dropEffect = "move";
+      }
+    });
+
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const data = e.dataTransfer.getData("text/plain");
+      if (!data) return;
+
+      if (data.startsWith("add:")) {
+        const blockType = data.split(":")[1];
+        if (!program.isStatementBlockType(blockType)) return;
+
+        if (parent[slotName]) {
+          parent[slotName] = null;
+        }
+        parent[slotName] = program.createBlockByType(blockType);
+        validateAndRender();
+      } else if (data.startsWith("move:")) {
+        const blockId = parseInt(data.split(":")[1], 10);
+        const location = program.findBlockWithParentById(blockId);
+        if (!location) return;
+        const { blockModel } = location;
+        if (!program.isStatementBlockType(blockModel.type)) return;
+        if (blockModel.hasDescendant(parent.id)) return;
+
+        if (parent[slotName]) parent[slotName] = null;
+        blockModel.removeFromParent(location.parentBlockModel);
+        parent[slotName] = blockModel;
         validateAndRender();
       }
     });

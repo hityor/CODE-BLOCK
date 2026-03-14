@@ -25,6 +25,12 @@ function collectDeclaredNames(declaredNames) {
         if (isValidVarName(name)) declaredNames.add(name);
       }
     }
+
+    if (block.type === "for" && block.initialVarName) {
+      if (isValidVarName(block.initialVarName)) {
+        declaredNames.add(block.initialVarName);
+      }
+    }
   });
 }
 
@@ -259,6 +265,42 @@ function renderBlockBody(blockModel) {
     renderCustomStatementList(blockModel.children, blockView.bodyCanvasEl);
   }
 
+  if (blockModel.type === "for") {
+    renderOperandView(
+      blockModel.initialValue,
+      blockView.initOperandView,
+      blockModel.initialExprChild,
+    );
+
+    const currentCondEl = blockView.conditionSlot.firstElementChild;
+    if (blockModel.conditionChild) {
+      renderBlockShell(blockModel.conditionChild);
+      renderBlockBody(blockModel.conditionChild);
+      const expectedCondEl = viewById.get(blockModel.conditionChild.id).blockEl;
+      if (currentCondEl !== expectedCondEl) {
+        blockView.conditionSlot.innerHTML = "";
+        blockView.conditionSlot.appendChild(expectedCondEl);
+      }
+    } else if (currentCondEl) {
+      blockView.conditionSlot.innerHTML = "";
+    }
+
+    const currentIncEl = blockView.incrementSlot.firstElementChild;
+    if (blockModel.incrementChild) {
+      renderBlockShell(blockModel.incrementChild);
+      renderBlockBody(blockModel.incrementChild);
+      const expectedIncEl = viewById.get(blockModel.incrementChild.id).blockEl;
+      if (currentIncEl !== expectedIncEl) {
+        blockView.incrementSlot.innerHTML = "";
+        blockView.incrementSlot.appendChild(expectedIncEl);
+      }
+    } else if (currentIncEl) {
+      blockView.incrementSlot.innerHTML = "";
+    }
+
+    renderCustomStatementList(blockModel.children, blockView.bodyCanvas);
+  }
+
   if (blockModel.type === "logic") {
     renderOperandView(null, blockView.leftOperandView, blockModel.children[0]);
     renderOperandView(null, blockView.rightOperandView, blockModel.children[1]);
@@ -333,6 +375,12 @@ function renderBlockShell(blockModel) {
       blockView.selectEl,
       blockModel.arrayName,
     );
+  } else if (blockModel.type === "for") {
+    blockView.varInput.value = blockModel.initialVarName;
+    if (blockView.initOperandView.literalInputEl) {
+      blockView.initOperandView.literalInputEl.value =
+        blockModel.initialValue.value;
+    }
   } else if (blockModel.type === "compare")
     blockView.operatorEl.value = blockModel.operator;
   else if (blockModel.type === "boolean")

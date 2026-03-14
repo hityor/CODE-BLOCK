@@ -352,6 +352,43 @@ function validateWhile(blockModel, scope, errorsById, errors) {
   }
 }
 
+function validateFor(blockModel, scope, errorsById, errors) {
+  if (!blockModel.initialVarName) {
+    errors.push("Имя переменной в инициализаторе не задано");
+  } else if (!isValidVarName(blockModel.initialVarName)) {
+    errors.push(`Некорректное имя переменной: ${blockModel.initialVarName}`);
+  } else if (scope.has(blockModel.initialVarName)) {
+    errors.push(`Переменная уже объявлена: ${blockModel.initialVarName}`);
+  } else {
+    scope.add(blockModel.initialVarName);
+  }
+
+  validateOperand(
+    blockModel.initialExprChild,
+    blockModel.initialValue,
+    scope,
+    errorsById,
+    errors,
+    "Начальное значение",
+  );
+
+  if (!blockModel.conditionChild) {
+    errors.push("Условие цикла не задано");
+  } else {
+    validateLogicalExpression(blockModel.conditionChild, scope, errorsById);
+  }
+
+  if (!blockModel.incrementChild) {
+    errors.push("Инкремент не задан");
+  } else {
+    validateStatementBlock(blockModel.incrementChild, scope, errorsById);
+  }
+
+  for (const child of blockModel.children) {
+    validateStatementBlock(child, scope, errorsById);
+  }
+}
+
 function validateStatementBlock(blockModel, scope, errorsById) {
   const errors = [];
 
@@ -366,7 +403,9 @@ function validateStatementBlock(blockModel, scope, errorsById) {
     validateIf(blockModel, scope, errorsById, errors);
   else if (blockModel.type === "while")
     validateWhile(blockModel, scope, errorsById, errors);
-  else errors.push(`Неизвестный тип блока: ${blockModel.type}`);
+  else if (blockModel.type === "for") {
+    validateFor(blockModel, scope, errorsById, errors);
+  } else errors.push(`Неизвестный тип блока: ${blockModel.type}`);
 
   errorsById.set(blockModel.id, errors);
 }

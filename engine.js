@@ -69,7 +69,7 @@ function buildLogicalExprFromBlock(block) {
 
 function buildStatements(blocks) {
   const statements = [];
-  
+
   for (const block of blocks) {
     if (block.type === "varDecl") {
       const names = parseNames(block.rawNames);
@@ -125,6 +125,31 @@ function buildStatements(blocks) {
       const condition = buildLogicalExprFromBlock(block.conditionChild);
       const body = new BlockStatement(buildStatements(block.children));
       statements.push(new WhileStatement(condition, body));
+      continue;
+    }
+
+    if (block.type === "for") {
+      const initVarName = block.initialVarName;
+      const initDecl = new DeclareStatement(initVarName);
+      const initValueExpr = block.initialExprChild
+        ? buildExprFromBlock(block.initialExprChild)
+        : operandToAst(block.initialValue);
+      const initAssign = new AssignStatement(initVarName, initValueExpr);
+      const initializer = new BlockStatement([initDecl, initAssign]);
+
+      const condition = buildLogicalExprFromBlock(block.conditionChild);
+
+      let increment = null;
+      if (block.incrementChild) {
+        const incStatements = buildStatements([block.incrementChild]);
+        increment = incStatements[0];
+      }
+
+      const body = new BlockStatement(buildStatements(block.children));
+
+      statements.push(
+        new ForStatement(initializer, condition, increment, body),
+      );
       continue;
     }
   }

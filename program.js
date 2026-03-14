@@ -10,10 +10,6 @@ class Program {
     return this.nextId++;
   }
 
-  isConditionBlockType(blockType) {
-    return blockType === "compare";
-  }
-
   isStatementBlockType(blockType) {
     return (
       blockType === "varDecl" ||
@@ -21,7 +17,8 @@ class Program {
       blockType === "arrayDecl" ||
       blockType === "arraySet" ||
       blockType === "if" ||
-      blockType === "while"
+      blockType === "while" ||
+      blockType === "for"
     );
   }
 
@@ -54,6 +51,21 @@ class Program {
 
     return newBlockModel;
   }
+
+  initializeForBlock(block) {
+    if (block.type !== "for") return;
+
+    const initBlock = this.createBlockByType("varDecl", true);
+    block.initializerChild = initBlock;
+
+    const condBlock = this.createBlockByType("compare", true);
+    block.conditionChild = condBlock;
+
+    const incBlock = this.createBlockByType("assign", true);
+    block.incrementChild = incBlock;
+  }
+
+  hasDescendant() {}
 
   serialize() {
     return {
@@ -97,6 +109,8 @@ class Program {
     if (operandType === "condition")
       return parentBlock.type === "if" || parentBlock.type === "while";
 
+    if (parentBlock.type === "for") return operandType === "initialValue";
+
     if (parentBlock.type === "logic")
       return operandType === "left" || operandType === "right";
 
@@ -129,7 +143,8 @@ class Program {
       parentBlock.type === "assign" ||
       parentBlock.type === "arrayGet" ||
       parentBlock.type === "arraySet" ||
-      parentBlock.type === "compare"
+      parentBlock.type === "compare" ||
+      (parentBlock.type === "for" && operandType === "initialValue")
     ) {
       return (
         blockType === "arith" ||
@@ -194,10 +209,11 @@ class Program {
 
   putBlock(parentBlock, blockType, addIndex) {
     if (!this.isStatementBlockType(blockType)) return;
-
     const block = this.createBlockByType(blockType);
     if (!block) return;
-
+    if (blockType === "for") {
+      this.initializeForBlock(block);
+    }
     const index = this.normalizeIndex(addIndex, parentBlock.children.length);
     parentBlock.children.splice(index, 0, block);
   }
@@ -237,6 +253,11 @@ class Program {
         parentBlock.children[1] = newBlock;
         return true;
       }
+    }
+
+    if (operandType === "initialValue" && !parentBlock.initialExprChild) {
+      parentBlock.initialExprChild = newBlock;
+      return true;
     }
 
     if (
@@ -326,10 +347,15 @@ class Program {
     if (!location) return;
 
     const { blockModel, parentBlockModel } = location;
-    if (!this.isExpressionBlockType(blockModel.type)) return;
-    if (blockModel.id === newParent.id) return;
-    if (blockModel.hasDescendant(newParent.id)) return;
-    if (!this.canInsertExpressionIntoParent(newParent, operandType)) return;
+
+    if (
+      !this.isExpressionBlockType(blockModel.type) ||
+      blockModel.id === newParent.id ||
+      blockModel.hasDescendant(newParent.id) ||
+      !this.canInsertExpressionIntoParent(newParent, operandType)
+    )
+      return;
+
     if (
       (operandType === "expression" && newParent.children[0] === blockModel) ||
       (operandType === "left" && newParent.children[0] === blockModel) ||
@@ -351,6 +377,12 @@ class Program {
       if (operandType === "right" && newParent.children[1] === blockModel)
         return;
     }
+
+    if (
+      operandType === "initialValue" &&
+      newParent.initialExprChild === blockModel
+    )
+      return;
 
     blockModel.removeFromParent(parentBlockModel);
     this.insertChildIntoParent(newParent, blockModel, operandType);

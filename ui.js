@@ -135,6 +135,9 @@ fileInput.addEventListener("change", (e) => {
 });
 
 clearCanvasBtn.addEventListener("click", () => {
+  if (!confirm("Вы действительно хотите очистить содержимое программы?"))
+    return;
+
   program.children = [];
   program.nextId = 1;
   viewById.clear();

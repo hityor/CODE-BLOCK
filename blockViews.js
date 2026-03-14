@@ -54,6 +54,7 @@ function makeLogicOperandView(parentBlockModel, operandType) {
   const rootEl = document.createElement("div");
   rootEl.className = "operandBlock";
   dnd.makeExpressionDropZone(rootEl, parentBlockModel, operandType);
+
   const childSlotEl = document.createElement("div");
   rootEl.appendChild(childSlotEl);
   return { rootEl, childSlotEl };
@@ -196,13 +197,13 @@ export const Views = {
     nameInputEl.placeholder = "arr";
 
     const openBracketEl = document.createElement("span");
-    openBracketEl.textContent = "[";
+    openBracketEl.textContent = " [ ";
 
     const sizeInputEl = document.createElement("input");
     sizeInputEl.placeholder = "5";
 
     const closeBracketEl = document.createElement("span");
-    closeBracketEl.textContent = "]";
+    closeBracketEl.textContent = " ] ";
 
     const errorBoxEl = makeErrorBox();
 
@@ -238,12 +239,12 @@ export const Views = {
     const selectEl = document.createElement("select");
 
     const openBracketEl = document.createElement("span");
-    openBracketEl.textContent = "[";
+    openBracketEl.textContent = " [ ";
 
     const indexView = makeOperandView(this.index, this, "index");
 
     const closeBracketEl = document.createElement("span");
-    closeBracketEl.textContent = "]";
+    closeBracketEl.textContent = " ] ";
 
     const errorBoxEl = makeErrorBox();
 
@@ -273,12 +274,12 @@ export const Views = {
     const selectEl = document.createElement("select");
 
     const openBracketEl = document.createElement("span");
-    openBracketEl.textContent = "[";
+    openBracketEl.textContent = " [ ";
 
     const indexView = makeOperandView(this.index, this, "index");
 
     const closeBracketEl = document.createElement("span");
-    closeBracketEl.textContent = "]";
+    closeBracketEl.textContent = " ] ";
 
     const equalsEl = document.createElement("span");
     equalsEl.textContent = " = ";
@@ -417,7 +418,7 @@ export const Views = {
     whileLabelEl.textContent = "while";
 
     const conditionSlotEl = document.createElement("div");
-    conditionSlotEl.className = "whileIfBodyCanvas";
+    conditionSlotEl.className = "whileIFConditionSlot";
     dnd.makeConditionDropZone(conditionSlotEl, this);
 
     const doLabelEl = document.createElement("span");
@@ -444,6 +445,92 @@ export const Views = {
       errorBoxEl,
       conditionSlotEl,
       bodyCanvasEl,
+    };
+    viewById.set(this.id, blockView);
+    return blockView;
+  },
+
+  forView() {
+    const blockEl = document.createElement("div");
+    blockEl.className = "block blockSuccess";
+    blockEl.draggable = true;
+
+    const headerEl = document.createElement("div");
+    headerEl.className = "forHeader";
+
+    const initPartEl = document.createElement("span");
+    initPartEl.className = "forInitPart";
+
+    const varInputEl = document.createElement("input");
+    varInputEl.type = "text";
+    varInputEl.placeholder = "i";
+    varInputEl.style.width = "50px";
+
+    varInputEl.addEventListener("input", () => {
+      this.initialVarName = varInputEl.value;
+      validateAndRender();
+    });
+
+    const equalsSpanEl = document.createElement("span");
+    equalsSpanEl.textContent = " = ";
+
+    const initOperandViewEl = makeOperandView(
+      this.initialValue,
+      this,
+      "initialValue",
+    );
+
+    initPartEl.appendChild(varInputEl);
+    initPartEl.appendChild(equalsSpanEl);
+    initPartEl.appendChild(initOperandViewEl.rootEl);
+
+    const conditionSlotEl = document.createElement("div");
+    conditionSlotEl.className = "forConditionSlot";
+    dnd.makeConditionDropZone(conditionSlotEl, this);
+
+    const incrementSlotEl = document.createElement("div");
+    incrementSlotEl.className = "forIncrementSlot";
+    dnd.makeStatementSlotDropZone(incrementSlotEl, this, "incrementChild");
+
+    const forLabelEl = document.createElement("span");
+    forLabelEl.textContent = "for";
+    forLabelEl.className = "forSeparator";
+
+    const separator1 = document.createElement("span");
+    separator1.textContent = ";";
+    separator1.className = "forSeparator";
+
+    const separator2 = document.createElement("span");
+    separator2.textContent = ";";
+    separator2.className = "forSeparator";
+
+    headerEl.appendChild(forLabelEl);
+    headerEl.appendChild(initPartEl);
+    headerEl.appendChild(separator1);
+    headerEl.appendChild(conditionSlotEl);
+    headerEl.appendChild(separator2);
+    headerEl.appendChild(incrementSlotEl);
+
+    const errorBoxEl = makeErrorBox();
+    headerEl.appendChild(errorBoxEl);
+
+    const bodyCanvasEl = document.createElement("div");
+    bodyCanvasEl.className = "whileIfBodyCanvas";
+    dnd.makeDropZone(bodyCanvasEl, this);
+
+    blockEl.appendChild(headerEl);
+    blockEl.appendChild(bodyCanvasEl);
+
+    makeDragStart(this, blockEl);
+
+    const blockView = {
+      blockEl,
+      errorBoxEl,
+      varInput: varInputEl,
+      initOperandView: initOperandViewEl,
+      conditionSlot: conditionSlotEl,
+      incrementSlot: incrementSlotEl,
+      bodyCanvas: bodyCanvasEl,
     };
     viewById.set(this.id, blockView);
     return blockView;
@@ -485,8 +572,8 @@ export const Views = {
     const operatorEl = document.createElement("select");
     operatorEl.className = "exprOperator";
     operatorEl.innerHTML = `
-    <option value="&&">AND</option>
-    <option value="||">OR</option>
+    <option value="&&">and</option>
+    <option value="||">or</option>
   `;
     const rightOperandView = makeLogicOperandView(this, "right");
     const errorBoxEl = makeErrorBox();
